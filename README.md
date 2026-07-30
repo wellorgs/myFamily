@@ -82,6 +82,12 @@ myfamily/
 
 Create a `.env` file based on `.env.example`:
 
+```bash
+cp .env.example .env
+```
+
+Then fill in your actual API keys. **Never commit the `.env` file** - it's in `.gitignore` for security.
+
 ```env
 # Firebase
 VITE_FIREBASE_API_KEY=your_api_key
@@ -97,9 +103,11 @@ VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_key
 # Firebase Admin (for backend)
 FIREBASE_ADMIN_SDK_KEY=your_admin_key
 
-# Other
-VITE_GEMINI_API_KEY=your_gemini_key
+# Google Gemini AI
+VITE_GEMINI_API_KEY=your_gemini_api_key
 ```
+
+⚠️ **Security Note**: See [SECURITY.md](./SECURITY.md) for detailed information on handling sensitive keys safely.
 
 ## Available Scripts
 
@@ -214,6 +222,7 @@ For issues and questions, please check existing GitHub issues or create a new on
 
 ## Related Documentation
 
+- [Security Guide](./SECURITY.md) - 🔐 How to handle API keys and secrets safely
 - [Implementation Summary](./IMPLEMENTATION_SUMMARY.md)
 - [Onboarding Implementation](./ONBOARDING_IMPLEMENTATION.md)
 - [Deployment Guide](./DEPLOYMENT.md)
