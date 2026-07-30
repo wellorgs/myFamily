@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function sameFamily(familyId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/family_members/$(familyId + "_" + request.auth.uid));
+    }
+
+    match /profiles/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /user_roles/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /families/{familyId} {
+      allow read, update: if sameFamily(familyId);
+      allow create: if signedIn();
+    }
+
+    match /{collection}/{docId} {
+      allow read, write: if signedIn() &&
+        collection in [
+          "family_members",
+          "parents",
+          "emergency_contacts",
+          "medicines",
+          "medicine_logs",
+          "appointments",
+          "vitals",
+          "sos_events",
+          "media_posts",
+          "notifications",
+          "ai_conversations",
+          "ai_messages",
+          "subscriptions"
+        ];
+    }
+  }
+}

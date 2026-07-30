@@ -1,0 +1,18 @@
+export const FIRESTORE_COLLECTIONS = {
+  profiles: "profiles",
+  families: "families",
+  familyMembers: "family_members",
+  parents: "parents",
+  emergencyContacts: "emergency_contacts",
+  medicines: "medicines",
+  medicineLogs: "medicine_logs",
+  appointments: "appointments",
+  vitals: "vitals",
+  sosEvents: "sos_events",
+  mediaPosts: "media_posts",
+  notifications: "notifications",
+  aiConversations: "ai_conversations",
+  aiMessages: "ai_messages",
+  subscriptions: "subscriptions",
+  userRoles: "user_roles",
+} as const;
