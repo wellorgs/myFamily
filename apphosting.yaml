@@ -1,5 +1,11 @@
 runtime: nodejs20
 
+buildConfig:
+  building:
+    steps:
+      - run: npm ci
+      - run: npm run build
+
 env:
   VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
   VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
