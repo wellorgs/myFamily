@@ -15,7 +15,9 @@ export async function callGeminiAI(
   conversationHistory: Message[] = []
 ): Promise<string> {
   if (!API_KEY) {
-    return mockReply(userMessage);
+    throw new Error(
+      "Gemini API key not configured. Please set VITE_GEMINI_API_KEY in your .env file."
+    );
   }
 
   try {
@@ -54,32 +56,20 @@ Be friendly, clear, and encouraging. Use simple language. Keep responses concise
     });
 
     if (!response.ok) {
-      console.error("Gemini API error:", response.statusText);
-      return mockReply(userMessage);
+      const errorData = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorData}`);
     }
 
     const data = await response.json();
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return reply || mockReply(userMessage);
-  } catch (error) {
-    console.error("Gemini API call failed:", error);
-    return mockReply(userMessage);
-  }
-}
 
-function mockReply(q: string): string {
-  const lower = q.toLowerCase();
-  if (lower.includes("weather"))
-    return "It's 28°C and sunny. A light shawl for the evening should be plenty.";
-  if (lower.includes("medicine"))
-    return "Today: Metformin 500mg after breakfast, Amlodipine 5mg morning, Atorvastatin 10mg after dinner.";
-  if (lower.includes("call"))
-    return "Calling Priya now…";
-  if (lower.includes("music"))
-    return "Playing your relaxing playlist.";
-  if (lower.includes("appointment"))
-    return "You have Dr. Sharma at 4:00 PM at Apollo Clinic.";
-  if (lower.includes("eat"))
-    return "A dal, one roti, and vegetables. Skip sugary drinks — try lemon water.";
-  return "I've noted that. Anything else I can help with?";
+    if (!reply) {
+      throw new Error("No response received from Gemini API");
+    }
+
+    return reply;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error occurred";
+    throw new Error(`Failed to call Gemini AI: ${message}`);
+  }
 }
