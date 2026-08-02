@@ -14,7 +14,7 @@ import {
   verifyOtp,
 } from "@/lib/firebase-auth";
 import { getNextAuthRoute } from "@/lib/redirect-utils";
-import { Apple, ChevronLeft, Heart, Mail, Phone } from "lucide-react";
+import { Apple, ChevronLeft, Heart, Mail, Phone, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -31,12 +31,14 @@ function AuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmailAddress, setSignUpEmailAddress] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const goNext = () => {
@@ -174,7 +176,24 @@ const handleVerifyOtp = async () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="pw">Password</Label>
-              <Input id="pw" type="password" placeholder="Password" className="h-12 rounded-2xl" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <Input
+                  id="pw"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  className="h-12 rounded-2xl pr-12"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
             <Button className="h-12 w-full rounded-2xl text-base" onClick={handleSignIn} disabled={busy}>
               Sign in
@@ -273,14 +292,24 @@ const handleVerifyOtp = async () => {
 
               <div className="space-y-2">
                 <Label htmlFor="pw2">Password</Label>
-                <Input
-                  id="pw2"
-                  type="password"
-                  placeholder="Create a password"
-                  className="h-12 rounded-2xl"
-                  value={signUpPassword}
-                  onChange={(e) => setSignUpPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="pw2"
+                    type={showSignUpPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    className="h-12 rounded-2xl pr-12"
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                  >
+                    {showSignUpPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
 
               <Button
