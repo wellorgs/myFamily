@@ -19,5 +19,11 @@
         "destination": "/index.html"
       }
     ]
+  },
+  "backends": {
+    "default": {
+      "codebase": "default",
+      "source": "."
+    }
   }
 }
