@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, CheckCircle2, Clock, AlertCircle, Loader } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
+import { getMedicineOCR } from "@/lib/gemini-ai";
 
 interface MedicineData {
   medicineName: string | null;
@@ -109,7 +110,7 @@ function Scan() {
         throw new Error("Failed to capture image data");
       }
 
-      console.log("Image captured, sending to Gemini API...");
+      console.log("Image captured, sending to DeepSeek Vision API...");
       setStep("processing");
       setIsLoading(true);
       await analyzeMedicineLabel(imageData);
@@ -123,105 +124,22 @@ function Scan() {
   };
 
   const analyzeMedicineLabel = async (base64Image: string) => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error(
-        "Gemini API key not configured. Please set VITE_GEMINI_API_KEY in .env and restart the server."
-      );
-    }
-
     try {
-      console.log("Calling Gemini Vision API...");
+      console.log("Calling DeepSeek Vision API for medicine OCR...");
+      setIsLoading(true);
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `You are a medicine label reader. Analyze this image carefully and extract medicine information.
+      // Use DeepSeek-VL2 via gemini-ai module
+      const ocrResult = await getMedicineOCR(base64Image);
 
-IMPORTANT: This can be:
-- Tablet/Capsule strips (पता/patta)
-- Eye drops (आंखों की दवा)
-- Nasal spray (नाक की दवा)
-- Liquid/Syrup
-- Ointment/Cream
-- Inhalers
-- Any other medicine packaging
-
-Extract and return ONLY valid JSON (no markdown, no code blocks, just raw JSON):
-{
-  "medicineName": "exact name from label",
-  "medicineType": "tablet/capsule/drops/spray/liquid/ointment/inhaler/other",
-  "dosage": "strength and unit (e.g., 500mg, 0.5%)",
-  "frequency": "usage frequency from label (e.g., twice daily, 3 times daily, as needed)",
-  "instructions": "special instructions (e.g., after food, with water, not in sunlight)",
-  "sideEffects": "any side effects mentioned on label",
-  "expiryDate": "expiry/manufacturing date if visible",
-  "manufacturer": "company name if visible"
-}
-
-If a field is not visible on the label, use null. Return ONLY the JSON object.`,
-                  },
-                  {
-                    inlineData: {
-                      mimeType: "image/jpeg",
-                      data: base64Image,
-                    },
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 500,
-            },
-          }),
-        }
-      );
-
-      console.log("Gemini API response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error("Gemini API error response:", errorData);
-        throw new Error(`API Error (${response.status}): ${errorData.slice(0, 100)}`);
-      }
-
-      const data = await response.json();
-      console.log("Gemini API response:", data);
-
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!responseText) {
-        throw new Error("No response text from Gemini API. The image might not contain a valid medicine label.");
-      }
-
-      console.log("Raw response text:", responseText);
-
-      // Clean up the response - remove markdown code blocks if present
-      let jsonText = responseText.trim();
-      if (jsonText.startsWith("```json")) {
-        jsonText = jsonText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-      } else if (jsonText.startsWith("```")) {
-        jsonText = jsonText.replace(/^```\s*/, "").replace(/\s*```$/, "");
-      }
-
-      // Parse the JSON response
-      let medicineData: MedicineData;
-      try {
-        medicineData = JSON.parse(jsonText);
-      } catch (parseErr) {
-        console.error("JSON parse error:", parseErr, "Text:", jsonText);
-        throw new Error(
-          "Could not parse medicine information. Please try a clearer photo with better lighting."
-        );
-      }
+      const medicineData: MedicineData = {
+        medicineName: ocrResult.name || null,
+        dosage: ocrResult.dosage || null,
+        frequency: ocrResult.frequency || null,
+        instructions: ocrResult.instructions || null,
+        sideEffects: null,
+        expiryDate: null,
+        manufacturer: null,
+      };
 
       // Validate that we got at least a medicine name
       if (!medicineData.medicineName) {
