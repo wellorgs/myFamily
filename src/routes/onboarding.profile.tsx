@@ -1,13 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { completeProfile } from "@/lib/family-operations";
+import { getState } from "@/lib/app-state";
 import { ChevronLeft, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+
+const TEST_ACCOUNTS = {
+  "mom@family.local": { name: "Sarah Johnson", phone: "9876543210" },
+  "dad@family.local": { name: "Michael Johnson", phone: "9876543211" },
+  "child@family.local": { name: "Emma Johnson", phone: "9876543212" },
+};
 
 export const Route = createFileRoute("/onboarding/profile")({
   head: () => ({
@@ -21,6 +28,32 @@ function ProfileCompletion() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Auto-complete for test accounts
+  useEffect(() => {
+    const email = getState().email;
+    const testData = TEST_ACCOUNTS[email as keyof typeof TEST_ACCOUNTS];
+    if (testData) {
+      handleAutoComplete(testData.name, testData.phone);
+    }
+  }, []);
+
+  const handleAutoComplete = async (name: string, testPhone: string) => {
+    try {
+      setBusy(true);
+      await completeProfile({
+        full_name: name,
+        phone: testPhone,
+      });
+      navigate({ to: "/onboarding/family" });
+    } catch (error) {
+      console.error("Auto-complete error:", error);
+      // Continue anyway for test accounts
+      navigate({ to: "/onboarding/family" });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleContinue = async () => {
     if (!fullName.trim()) {

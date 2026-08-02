@@ -3,9 +3,10 @@ import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { Button } from "@/components/ui/button";
 import { Mic, Sparkles, Loader, CheckCircle2, AlertCircle, Edit2, X } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { callGeminiAI, type Message } from "@/lib/gemini-ai";
 import { toast } from "sonner";
+import { getState } from "@/lib/app-state";
 
 export const Route = createFileRoute("/parent/ai")({
   head: () => ({
@@ -29,10 +30,13 @@ const SUGGESTIONS = [
 ];
 
 function AI() {
+  const userName = useMemo(() => getState().name || "there", []);
+  const initialGreeting = `Hello ${userName.split(" ")[0]}. How can I help you today?`;
+
   const [holding, setHolding] = useState(false);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<{ role: "user" | "ai"; text: string }[]>([
-    { role: "ai", text: "Hello John. How can I help you today?" },
+    { role: "ai", text: initialGreeting },
   ]);
   const [transcribedText, setTranscribedText] = useState("");
   const [showReview, setShowReview] = useState(false);

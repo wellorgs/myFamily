@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { ChevronLeft, Heart, Users, UserPlus, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { getState } from "@/lib/app-state";
+
+const TEST_ACCOUNT_FAMILY_CODE = "JOHNSON1";
 
 export const Route = createFileRoute("/onboarding/family")({
   head: () => ({
@@ -25,6 +27,29 @@ function FamilySetup() {
   const [busy, setBusy] = useState(false);
   const [createdFamilyCode, setCreatedFamilyCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Auto-join test family for test accounts
+  useEffect(() => {
+    const email = getState().email;
+    if (email && email.endsWith("@family.local")) {
+      handleAutoJoinTestFamily();
+    }
+  }, []);
+
+  const handleAutoJoinTestFamily = async () => {
+    try {
+      setBusy(true);
+      await joinFamilyWithInviteCode(TEST_ACCOUNT_FAMILY_CODE);
+      const state = getState();
+      navigate({
+        to: state.role === "parent" ? "/parent/home" : "/family/dashboard",
+      });
+    } catch (error) {
+      console.error("Auto-join error:", error);
+      // Allow manual setup if auto-join fails
+      setBusy(false);
+    }
+  };
 
   const handleCreateFamily = async () => {
     if (!familyName.trim()) {
