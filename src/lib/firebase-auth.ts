@@ -41,17 +41,31 @@ function connectEmulators() {
   emulatorsConnected = true;
 }
 
+async function getTestAccountRole(email: string): Promise<Role | null> {
+  // Auto-assign roles for test accounts (mock data)
+  const testRoles: Record<string, Role> = {
+    "mom@family.local": "parent",
+    "dad@family.local": "parent",
+    "child@family.local": "family",
+  };
+  return testRoles[email] || null;
+}
+
 async function loadProfile(user: User) {
   const snapshot = await getDoc(doc(getFirestore(firebaseApp), "profiles", user.uid));
   const data = snapshot.exists() ? snapshot.data() : null;
+
+  // Check if it's a test account and get auto-role
+  const testRole = user.email ? await getTestAccountRole(user.email) : null;
+  const role = (data?.role as Role | undefined) || testRole;
 
   setState({
     authed: true,
     name: (data?.full_name as string | undefined) ?? user.displayName ?? user.email?.split("@")[0] ?? "myFamily",
     email: user.email ?? "",
-    role: (data?.role as Role | undefined) ?? getState().role,
+    role: role ?? getState().role,
     lang: (data?.language as Lang | undefined) ?? getState().lang,
-    familyId: (data?.family_id as string | undefined) ?? getState().familyId,
+    familyId: (data?.family_id as string | undefined) ?? "family_test_001",
     parentId: (data?.parent_id as string | undefined) ?? getState().parentId,
   });
 
