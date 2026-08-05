@@ -12,4 +12,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Firebase App Hosting runs a Node process, not a Cloudflare Worker. Without this
+  // the build defaults to `cloudflare-module` and the deployed server never boots.
+  nitro: { preset: "node-server" },
 });

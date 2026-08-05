@@ -1,1 +1,9 @@
 runtime: nodejs20
+
+scripts:
+  buildCommand: npm run build
+  runCommand: node .output/server/index.mjs
+
+runConfig:
+  minInstances: 0
+  maxInstances: 2
