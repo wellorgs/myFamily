@@ -206,9 +206,6 @@ Comprehensive test files created:
 
 ## Configuration Files
 
-### `.claude/launch.json`
-Updated to use correct dev server port (8080) for Vite development server
-
 ### `src/routes/onboarding.tsx`
 Updated to redirect to `/onboarding/profile` instead of dashboard
 
@@ -297,7 +294,6 @@ To test the complete onboarding flow:
 - `src/routes/family.dashboard.tsx`
 - `src/lib/app-state.ts`
 - `src/lib/firebase-auth.ts`
-- `.claude/launch.json`
 
 ## Verification Checklist
 

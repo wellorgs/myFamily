@@ -17,8 +17,10 @@ export type ProfileDoc = {
 export type SubscriptionDoc = {
   id: string;
   family_id: string;
-  stripe_customer_id: string;
-  stripe_subscription_id: string;
+  /** PhonePe merchant order id for the originating payment. */
+  provider_order_id: string;
+  /** PhonePe subscription / mandate id once AutoPay is set up. */
+  provider_subscription_id: string;
   tier: SubscriptionTier;
   status: string;
   current_period_end: string | null;

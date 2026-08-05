@@ -39,3 +39,6 @@ dist-ssr
 
 # Firebase deploy cache
 .firebase/
+
+# Local editor/tooling config
+.claude/
