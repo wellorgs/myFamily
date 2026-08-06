@@ -84,13 +84,11 @@ function Notifications() {
   const [callOpen, setCallOpen] = useState(false);
   const [callContact, setCallContact] = useState<CallContact | null>(null);
 
-  if (!notificationItems) return null;
-
   const readMap = useReadMap();
 
   const counts = useMemo(() => {
     const out: Record<FilterKey, number> = { all: 0, calls: 0, sos: 0, meds: 0, photos: 0 };
-    for (const n of notificationItems) {
+    for (const n of notificationItems ?? []) {
       if (readMap[n.id]) continue;
       out.all += 1;
       for (const f of FILTERS) {
@@ -99,13 +97,17 @@ function Notifications() {
       }
     }
     return out;
-  }, [readMap]);
+  }, [readMap, notificationItems]);
 
   const activeDef = FILTERS.find((f) => f.key === activeFilter)!;
   const visible = useMemo(() => {
+    if (!notificationItems) return [];
     if (!activeDef.kinds) return notificationItems;
     return notificationItems.filter((n) => activeDef.kinds!.includes(n.kind));
-  }, [activeDef]);
+  }, [activeDef, notificationItems]);
+
+  // Guard AFTER all hooks so the hook order never changes between renders.
+  if (!notificationItems) return null;
 
   const anyUnreadVisible = visible.some((n) => !readMap[n.id]);
 
