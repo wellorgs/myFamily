@@ -95,14 +95,15 @@ export const recommendations = [
   "Dad's sleep dipped below 6 hours three nights running. Worth a check-in.",
 ];
 
+// Insights weekly-adherence BarChart uses dataKey "d" (axis) and "adh" (bar).
 export const weeklyChart = [
-  { day: "Mon", steps: 7200, target: 8000 },
-  { day: "Tue", steps: 8500, target: 8000 },
-  { day: "Wed", steps: 9100, target: 8000 },
-  { day: "Thu", steps: 8800, target: 8000 },
-  { day: "Fri", steps: 7600, target: 8000 },
-  { day: "Sat", steps: 10200, target: 8000 },
-  { day: "Sun", steps: 6500, target: 8000 },
+  { d: "Mon", adh: 100 },
+  { d: "Tue", adh: 80 },
+  { d: "Wed", adh: 100 },
+  { d: "Thu", adh: 60 },
+  { d: "Fri", adh: 100 },
+  { d: "Sat", adh: 90 },
+  { d: "Sun", adh: 100 },
 ];
 
 export { MOCK_MEDICINES as medicines };
@@ -125,9 +126,10 @@ export const alerts = [
   { id: "3", tone: "amber", title: "Dad's phone battery low (42%)", time: "2h ago" },
 ];
 
+// Visits tab renders {doctor, specialty, date, time, hospital}.
 export const appointments = [
-  { id: "1", title: "Cardiology", date: "Aug 5", time: "10:00 AM", doctor: "Dr. Chen" },
-  { id: "2", title: "Dental Cleaning", date: "Aug 12", time: "2:30 PM", doctor: "Dr. Williams" },
+  { id: "1", doctor: "Dr. Sharma", specialty: "Cardiology", date: "Aug 8", time: "4:00 PM", hospital: "Apollo Clinic, MG Road" },
+  { id: "2", doctor: "Dr. Rao", specialty: "Dental", date: "Aug 15", time: "11:00 AM", hospital: "Smile Dental, Indiranagar" },
 ];
 
 export const healthCards = [
@@ -136,10 +138,11 @@ export const healthCards = [
   { id: "3", title: "Steps", value: "8,500", goal: "10,000" },
 ];
 
+// FamilyFeed renders {id, kind, from, emoji, time, caption} cards.
 export const familyFeed = [
-  { id: "1", actor: "Sarah", action: "took medication", time: "2 hours ago" },
-  { id: "2", actor: "Michael", action: "completed health check", time: "5 hours ago" },
-  { id: "3", actor: "Emma", action: "shared a message", time: "1 day ago" },
+  { id: "1", kind: "voice", from: "Priya", emoji: "👩🏽", time: "10 min ago", caption: "Hi Dad, don't forget your evening walk 💙" },
+  { id: "2", kind: "photo", from: "Arjun", emoji: "👨🏽", time: "2h ago", caption: "Weekend trip photos", scene: "🏞️" },
+  { id: "3", kind: "text", from: "Priya", emoji: "👩🏽", time: "Yesterday", caption: "Called the doctor — appointment confirmed" },
 ];
 
 export const familyMembers = [
@@ -176,8 +179,9 @@ export const aiSuggestions = [
   { id: "3", title: "Check blood pressure regularly", description: "Monitor and log results" },
 ];
 
+// Parent home "Upcoming today" renders {time, label}.
 export const upcomingEvents = [
-  { id: "1", title: "Doctor Appointment", date: "Aug 5", category: "medical" },
-  { id: "2", title: "Medication Refill", date: "Aug 8", category: "health" },
-  { id: "3", title: "Family Dinner", date: "Aug 10", category: "personal" },
+  { time: "4:00 PM", label: "Dr. Sharma — Cardiology" },
+  { time: "6:30 PM", label: "Evening walk reminder" },
+  { time: "9:00 PM", label: "Night medicine — Atorvastatin" },
 ];
