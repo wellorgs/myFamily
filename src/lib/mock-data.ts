@@ -22,40 +22,12 @@ export const MOCK_ACCOUNTS = {
   },
 };
 
+// Shape must match the medicines list (family.medicines + parent-detail Meds
+// tab): name/dose/freq/food/stock/verified. Content mirrors the meds screenshot.
 export const MOCK_MEDICINES = [
-  {
-    id: "med_001",
-    name: "Aspirin",
-    dosage: "500mg",
-    frequency: "Twice daily",
-    prescribedBy: "Dr. Smith",
-    purpose: "Pain relief & blood thinner",
-    startDate: new Date("2026-01-15"),
-    endDate: new Date("2027-01-15"),
-    instructions: "Take with water after meals",
-  },
-  {
-    id: "med_002",
-    name: "Metformin",
-    dosage: "1000mg",
-    frequency: "Once daily",
-    prescribedBy: "Dr. Johnson",
-    purpose: "Diabetes management",
-    startDate: new Date("2025-06-01"),
-    endDate: null,
-    instructions: "Take in the morning before breakfast",
-  },
-  {
-    id: "med_003",
-    name: "Lisinopril",
-    dosage: "10mg",
-    frequency: "Once daily",
-    prescribedBy: "Dr. Chen",
-    purpose: "Blood pressure control",
-    startDate: new Date("2025-03-20"),
-    endDate: null,
-    instructions: "Take in evening",
-  },
+  { id: "med_001", name: "Metformin", dose: "500 mg", freq: "2x daily", food: "After food", stock: 18, verified: true },
+  { id: "med_002", name: "Amlodipine", dose: "5 mg", freq: "1x morning", food: "After breakfast", stock: 6, verified: true },
+  { id: "med_003", name: "Atorvastatin", dose: "10 mg", freq: "1x night", food: "After dinner", stock: 24, verified: false },
 ];
 
 export const MOCK_ACTIVITIES = [
@@ -186,7 +158,17 @@ export const notificationItems = [
   { id: "5", kind: "sos", tone: "red", title: "SOS test alert resolved", time: "Yesterday", read: true },
 ];
 
-export const timeline = MOCK_ACTIVITIES;
+// Parent-detail Timeline tab renders { time, label } rows (matches the real
+// Firestore shape in use-timeline and the "mom tab" screenshot).
+export const timeline = [
+  { time: "8:00 AM", label: "Medicine taken" },
+  { time: "9:15 AM", label: "Morning walk — 1,240 steps" },
+  { time: "11:02 AM", label: "Priya called (12 min)" },
+  { time: "1:00 PM", label: "Lunch reminder completed" },
+  { time: "4:00 PM", label: "Dr. Sharma appointment" },
+  { time: "7:00 PM", label: "AI conversation (5 min)" },
+  { time: "9:12 PM", label: "Phone charging started" },
+];
 
 export const aiSuggestions = [
   { id: "1", title: "Increase water intake", description: "Aim for 8 glasses per day" },
