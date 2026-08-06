@@ -7,8 +7,10 @@ service cloud.firestore {
     }
 
     function sameFamily(familyId) {
+      // Membership is stored as families/{familyId}/family_members/{uid}
+      // (see addFamilyMember in family-operations.ts).
       return signedIn() &&
-        exists(/databases/$(database)/documents/family_members/$(familyId + "_" + request.auth.uid));
+        exists(/databases/$(database)/documents/families/$(familyId)/family_members/$(request.auth.uid));
     }
 
     match /profiles/{userId} {
@@ -21,8 +23,25 @@ service cloud.firestore {
     }
 
     match /families/{familyId} {
-      allow read, update: if sameFamily(familyId);
+      // Any signed-in user can look up a family (needed to join by invite code
+      // and to load your own family); the doc holds only a name + invite code.
+      // Mutations stay restricted to members.
+      allow read: if signedIn();
       allow create: if signedIn();
+      allow update: if sameFamily(familyId);
+
+      // Membership subcollection: read if you're in the family; a user may
+      // create only their OWN membership doc (join/create flow).
+      match /family_members/{memberId} {
+        allow read: if sameFamily(familyId);
+        allow create: if signedIn() && request.auth.uid == memberId;
+        allow update, delete: if signedIn() && request.auth.uid == memberId;
+      }
+
+      match /user_roles/{roleId} {
+        allow read: if sameFamily(familyId);
+        allow write: if signedIn() && request.auth.uid == roleId;
+      }
     }
 
     match /{collection}/{docId} {
