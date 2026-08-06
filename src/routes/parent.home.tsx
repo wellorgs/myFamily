@@ -21,6 +21,7 @@ import { SetupChecklist } from "@/components/mobile/SetupChecklist";
 import { ParentEmptyHome } from "@/components/mobile/ParentEmptyHome";
 import { useSetupStore } from "@/lib/setup-store";
 import { getStepsForRole } from "@/lib/setup-steps";
+import { isMockAccount } from "@/lib/account-utils";
 
 export const Route = createFileRoute("/parent/home")({
   head: () => ({ meta: [{ title: "Home — myFamily" }] }),
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/parent/home")({
 
 function Home() {
   const navigate = useNavigate();
-  const { name, parentId, role } = useAppState();
+  const { name, parentId, role, email } = useAppState();
   const t = useT();
   const canAccess = useDashboardGuard();
   const setupStore = useSetupStore(parentId);
@@ -80,9 +81,12 @@ function Home() {
 
   const steps = getStepsForRole((role as "parent" | "family") || "parent");
   const isSetupComplete = setupStore.getAllDone(steps.map((s) => s.id));
+  // Demo accounts are pre-seeded with mock data and should land straight on the
+  // full dashboard, not the setup checklist — that's how the app is meant to look.
+  const isDemo = isMockAccount(email);
 
-  // Show empty state if setup is not complete
-  if (setupStore.status !== "loading" && !isSetupComplete) {
+  // Show empty state if setup is not complete (real accounts only)
+  if (setupStore.status !== "loading" && !isSetupComplete && !isDemo) {
     return (
       <Screen
         title={`${greeting},`}

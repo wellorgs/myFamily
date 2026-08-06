@@ -28,13 +28,16 @@ export function useTodayCards(parentId: string) {
       }
 
       const data = snapshot.data();
+      // Deep-merge each nested block over the empty defaults so a partial
+      // Firestore doc (e.g. { todayWalk: { goal: 3000 } } with no `done`)
+      // can never produce an undefined leaf that crashes the dashboard render.
       return {
-        medicine: data.nextMedicine || emptyCards.medicine,
-        appointment: data.nextAppointment || emptyCards.appointment,
-        walk: data.todayWalk || emptyCards.walk,
-        water: data.todayWater || emptyCards.water,
-        familyMessage: data.lastFamilyMessage || emptyCards.familyMessage,
-        wellness: data.wellnessScore || emptyCards.wellness,
+        medicine: { ...emptyCards.medicine, ...(data.nextMedicine ?? {}) },
+        appointment: { ...emptyCards.appointment, ...(data.nextAppointment ?? {}) },
+        walk: { ...emptyCards.walk, ...(data.todayWalk ?? {}) },
+        water: { ...emptyCards.water, ...(data.todayWater ?? {}) },
+        familyMessage: { ...emptyCards.familyMessage, ...(data.lastFamilyMessage ?? {}) },
+        wellness: data.wellnessScore ?? emptyCards.wellness,
       };
     },
     { staleTime: 1000 * 60 * 2 }

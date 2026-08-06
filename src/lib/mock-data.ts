@@ -131,11 +131,16 @@ export const weeklyChart = [
 
 export { MOCK_MEDICINES as medicines };
 
-export const todayCards = [
-  { id: "1", title: "Morning Medication", status: "completed", time: "8:00 AM" },
-  { id: "2", title: "Health Check-in", status: "pending", time: "10:00 AM" },
-  { id: "3", title: "Afternoon Walk", status: "not-started", time: "3:00 PM" },
-];
+// Shape must match what parent.home + useTodayCards consume (medicine/appointment/
+// walk/water/familyMessage/wellness). This is the "with data" dashboard state.
+export const todayCards = {
+  medicine: { name: "Metformin", dose: "500 mg", time: "8:00 AM", food: "After breakfast" },
+  appointment: { doctor: "Dr. Sharma", specialty: "Cardiology", time: "4:00 PM", address: "Apollo Clinic, MG Road" },
+  walk: { goal: 3000, done: 1820 },
+  water: { goal: 8, done: 4 },
+  familyMessage: { from: "Priya (Daughter)", preview: "Hi Dad, don't forget your evening walk 💙" },
+  wellness: 82,
+};
 
 export const alerts = [
   { id: "1", title: "Medication Reminder", message: "Time to take your afternoon medication", severity: "info" },
