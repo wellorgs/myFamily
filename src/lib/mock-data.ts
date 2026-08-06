@@ -100,9 +100,12 @@ export function getMockMedicineOCR() {
   return samples[Math.floor(Math.random() * samples.length)];
 }
 
+// Shape must match family.dashboard + family.parents.$id (id/status/lastSeen/
+// wellness/medsPending/steps/sleep/battery). Content mirrors the child dashboard
+// "with data" screenshot.
 export const parents = [
-  { id: "user_mom", name: "Sarah Johnson", role: "parent", age: 58 },
-  { id: "user_dad", name: "Michael Johnson", role: "parent", age: 61 },
+  { id: "mom", name: "Mom (Anita)", status: "safe", lastSeen: "Just now", wellness: 88, medsPending: 0, steps: 4210, sleep: "7h 20m", battery: 78 },
+  { id: "dad", name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago", wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42 },
 ];
 
 export const insights = [
@@ -142,9 +145,11 @@ export const todayCards = {
   wellness: 82,
 };
 
+// Shape must match family.dashboard alerts (id/tone/title/time).
 export const alerts = [
-  { id: "1", title: "Medication Reminder", message: "Time to take your afternoon medication", severity: "info" },
-  { id: "2", title: "Doctor Appointment Soon", message: "You have an appointment tomorrow at 10 AM", severity: "warning" },
+  { id: "1", tone: "amber", title: "Dad missed evening medicine", time: "20 min ago" },
+  { id: "2", tone: "blue", title: "Mom completed her walk (3,200 steps)", time: "1h ago" },
+  { id: "3", tone: "amber", title: "Dad's phone battery low (42%)", time: "2h ago" },
 ];
 
 export const appointments = [
