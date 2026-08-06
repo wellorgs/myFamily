@@ -59,7 +59,12 @@ service cloud.firestore {
           "notifications",
           "ai_conversations",
           "ai_messages",
-          "subscriptions"
+          "subscriptions",
+          "timeline",
+          "insights",
+          "weeklyStats",
+          "recommendations",
+          "health_cards"
         ];
     }
   }

@@ -302,36 +302,6 @@ export async function getCurrentUserFamily(): Promise<Family | null> {
 
 // Get family members
 export async function getFamilyMembers(familyId: string): Promise<FamilyMember[]> {
-  // Return mock data for test family
-  if (familyId === "family_test_001") {
-    return [
-      {
-        id: "mYTvkmKt1dYdAk3CrlGdUJNAjri2",
-        family_id: familyId,
-        user_id: "mYTvkmKt1dYdAk3CrlGdUJNAjri2",
-        name: "Sarah Johnson",
-        role: "parent",
-        joined_at: Timestamp.fromDate(new Date("2025-01-01")),
-      },
-      {
-        id: "HZmuhXCkxzdup92HLk7KcXg2gqV2",
-        family_id: familyId,
-        user_id: "HZmuhXCkxzdup92HLk7KcXg2gqV2",
-        name: "Michael Johnson",
-        role: "parent",
-        joined_at: Timestamp.fromDate(new Date("2025-01-05")),
-      },
-      {
-        id: "Z4ZRMeD77IRqbdYZEzSq4fpdXUB3",
-        family_id: familyId,
-        user_id: "Z4ZRMeD77IRqbdYZEzSq4fpdXUB3",
-        name: "Emma Johnson",
-        role: "family",
-        joined_at: Timestamp.fromDate(new Date("2025-02-01")),
-      },
-    ];
-  }
-
   const db = getFirestore(firebaseApp);
   const snapshot = await getDocs(
     collection(
