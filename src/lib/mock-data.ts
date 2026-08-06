@@ -145,10 +145,12 @@ export const familyFeed = [
   { id: "3", kind: "text", from: "Priya", emoji: "👩🏽", time: "Yesterday", caption: "Called the doctor — appointment confirmed" },
 ];
 
+// parent.family renders {id, name, relation, emoji, emergency}.
 export const familyMembers = [
-  { id: "1", name: "Sarah Johnson", role: "parent", age: 58 },
-  { id: "2", name: "Michael Johnson", role: "parent", age: 61 },
-  { id: "3", name: "Emma Johnson", role: "family", age: 28 },
+  { id: "1", name: "Priya", relation: "Daughter", emoji: "👩🏽", emergency: true },
+  { id: "2", name: "Arjun", relation: "Son", emoji: "👨🏽", emergency: false },
+  { id: "3", name: "Meera", relation: "Wife", emoji: "👩🏽‍🦳", emergency: true },
+  { id: "4", name: "Dr. Sharma", relation: "Cardiologist", emoji: "🩺", emergency: false },
 ];
 
 // Shape must match the notifications route (id/kind/tone/title/time). kinds are
