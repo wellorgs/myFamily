@@ -6,6 +6,10 @@ import { Camera, CheckCircle2, Clock, AlertCircle, Loader } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { getMedicineOCR } from "@/lib/gemini-ai";
+import { useAppState } from "@/lib/app-state";
+import { useSetupStore } from "@/lib/setup-store";
+import { isMockAccount } from "@/lib/account-utils";
+import { saveScannedMedicine } from "@/lib/medicine-operations";
 
 interface MedicineData {
   medicineName: string | null;
@@ -31,6 +35,34 @@ function Scan() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
+  const { parentId, familyId, email } = useAppState();
+  const setupStore = useSetupStore(parentId);
+  const [saving, setSaving] = useState(false);
+
+  const handleSendForApproval = async () => {
+    if (!medicineData?.medicineName) return;
+    setSaving(true);
+    try {
+      // Real accounts persist a pending medicine; demo/mock accounts skip the
+      // write (their data is seeded) but still complete the setup step.
+      if (!isMockAccount(email)) {
+        await saveScannedMedicine({
+          name: medicineData.medicineName,
+          dosage: medicineData.dosage,
+          frequency: medicineData.frequency,
+          instructions: medicineData.instructions,
+          familyId,
+        });
+      }
+      setupStore.markStepDone("medicine");
+      setStep("sent");
+      toast.success("Sent to family for approval");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save medicine. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     // Load detected medicine data from session storage
@@ -230,12 +262,10 @@ function Scan() {
           )}
           <Button
             className="w-full h-12 rounded-2xl"
-            onClick={() => {
-              setStep("sent");
-              toast.success("Sent to family for approval");
-            }}
+            onClick={handleSendForApproval}
+            disabled={saving}
           >
-            Send to family for approval
+            {saving ? "Sending…" : "Send to family for approval"}
           </Button>
           <Button
             variant="outline"
