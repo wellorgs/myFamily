@@ -115,11 +115,12 @@ export const insights = [
   { title: "Sleep Quality", value: "Good", icon: "moon" },
 ];
 
+// Consumed as string[] (rendered directly as text in family.insights).
 export const recommendations = [
-  { id: 1, title: "Time for afternoon walk", time: "3:00 PM", icon: "walk" },
-  { id: 2, title: "Refill medicine prescription", time: "Tomorrow", icon: "pharmacy" },
-  { id: 3, title: "Drink more water", time: "Ongoing", icon: "water" },
-  { id: 4, title: "Upcoming appointment", time: "Aug 5 at 10 AM", icon: "calendar" },
+  "Dad missed his evening dose twice this week — a gentle reminder call around 8 PM helps.",
+  "Mom's walking streak is strong (5 days). A word of encouragement goes a long way.",
+  "Refill Dad's Metformin soon — about 5 days of tablets left.",
+  "Dad's sleep dipped below 6 hours three nights running. Worth a check-in.",
 ];
 
 export const weeklyChart = [
@@ -175,9 +176,14 @@ export const familyMembers = [
   { id: "3", name: "Emma Johnson", role: "family", age: 28 },
 ];
 
+// Shape must match the notifications route (id/kind/tone/title/time). kinds are
+// drawn from the FILTERS list: call, sos, medicine, photo, voice, text, activity.
 export const notificationItems = [
-  { id: "1", title: "Medication Reminder", description: "Take your afternoon medication", read: false },
-  { id: "2", title: "Appointment Reminder", description: "You have an appointment tomorrow", read: false },
+  { id: "1", kind: "medicine", tone: "amber", title: "Time for Metformin (500 mg)", time: "8:00 AM", read: false },
+  { id: "2", kind: "call", tone: "blue", title: "Missed call from Priya", time: "20 min ago", read: false },
+  { id: "3", kind: "activity", tone: "green", title: "Mom completed her morning walk", time: "1h ago", read: true },
+  { id: "4", kind: "photo", tone: "blue", title: "Arjun shared a photo", time: "Yesterday", read: true },
+  { id: "5", kind: "sos", tone: "red", title: "SOS test alert resolved", time: "Yesterday", read: true },
 ];
 
 export const timeline = MOCK_ACTIVITIES;
