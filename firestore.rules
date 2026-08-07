@@ -64,7 +64,8 @@ service cloud.firestore {
           "insights",
           "weeklyStats",
           "recommendations",
-          "health_cards"
+          "health_cards",
+          "events"
         ];
     }
   }

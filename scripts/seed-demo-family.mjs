@@ -162,6 +162,16 @@ async function seedFamilyData() {
       ],
     });
 
+    // events → parent home "Upcoming today" (queried by parentId, ordered by time)
+    const events = [
+      { time: "4:00 PM", label: "Dr. Sharma — Cardiology" },
+      { time: "6:30 PM", label: "Evening walk reminder" },
+      { time: "9:00 PM", label: "Night medicine — Atorvastatin" },
+    ];
+    for (const e of events) {
+      await setDoc(doc(collection(db, "events")), { parentId: mom, time: e.time, label: e.label });
+    }
+
     // media_posts → family feed (queried by familyId, ordered by createdAt)
     const feed = [
       { kind: "voice", from: "Priya", emoji: "👩🏽", time: "10 min ago", caption: "Hi Mom, don't forget your walk 💙" },

@@ -59,6 +59,13 @@ async function loadProfile(user: User) {
   const testRole = user.email ? await getTestAccountRole(user.email) : null;
   const role = (data?.role as Role | undefined) || testRole;
 
+  // A parent views their OWN records, so their parentId is their uid. Family
+  // members keep any explicitly-linked parent_id (parent screens are reached
+  // via the route param instead).
+  const resolvedParentId =
+    (data?.parent_id as string | undefined) ??
+    (role === "parent" ? user.uid : getState().parentId);
+
   setState({
     authed: true,
     name: (data?.full_name as string | undefined) ?? user.displayName ?? user.email?.split("@")[0] ?? "myFamily",
@@ -66,7 +73,7 @@ async function loadProfile(user: User) {
     role: role ?? getState().role,
     lang: (data?.language as Lang | undefined) ?? getState().lang,
     familyId: (data?.family_id as string | undefined) ?? "family_test_001",
-    parentId: (data?.parent_id as string | undefined) ?? getState().parentId,
+    parentId: resolvedParentId,
   });
 
   // Load family info into state
