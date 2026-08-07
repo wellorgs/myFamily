@@ -101,7 +101,7 @@ async function seedFamilyData() {
       { parentId: dad, name: "Atorvastatin", dose: "10 mg", freq: "1x night", food: "After dinner", stock: 24, verified: false, status: "pending" },
     ];
     for (const m of meds) {
-      await setDoc(doc(collection(db, "medicines")), { ...m, createdAt: serverTimestamp() });
+      await setDoc(doc(collection(db, "medicines")), { ...m, familyId: FAMILY_ID, createdAt: serverTimestamp() });
     }
 
     // timeline (queried by parentId, ordered by timestamp)
@@ -133,25 +133,25 @@ async function seedFamilyData() {
       await setDoc(doc(collection(db, "notifications")), { ...a, familyId: FAMILY_ID, createdAt: serverTimestamp() });
     }
 
-    // insights/{parentId} (flat fields the hook overrides onto the labels)
-    await setDoc(doc(db, "insights", mom), {
-      medicineAdherence: "92%", adherenceTrend: "+4% this week",
-      walkingTrend: "5.2k avg", walkingTrendText: "Up from 4.6k",
-      sleepTrend: "7h 10m", sleepTrendText: "Steady",
+    // insights/{parentId} (flat fields the hook overrides onto the labels) — seed
+    // BOTH parents so the child's insights view has data whichever parent is first.
+    const insightsFor = (adh, walk, sleep) => ({
+      medicineAdherence: adh, adherenceTrend: "+4% this week",
+      walkingTrend: walk, walkingTrendText: "Up this week",
+      sleepTrend: sleep, sleepTrendText: "Steady",
       moodTrend: "Positive", moodTrendText: "Improving",
       phoneUsage: "2h 40m", phoneUsageTrendText: "Normal",
       hydration: "6/8", hydrationTrendText: "On track",
       fallRisk: "Low", fallRiskTrendText: "No incidents",
       loneliness: "Low", lonelinessTrendText: "3 calls today",
     });
+    await setDoc(doc(db, "insights", mom), insightsFor("92%", "5.2k avg", "7h 10m"));
+    await setDoc(doc(db, "insights", dad), insightsFor("78%", "3.1k avg", "6h 05m"));
 
-    // weeklyStats/{parentId} → insights adherence chart
-    await setDoc(doc(db, "weeklyStats", mom), {
-      days: [
-        { d: "Mon", adh: 100 }, { d: "Tue", adh: 80 }, { d: "Wed", adh: 100 },
-        { d: "Thu", adh: 60 }, { d: "Fri", adh: 100 }, { d: "Sat", adh: 90 }, { d: "Sun", adh: 100 },
-      ],
-    });
+    // weeklyStats/{parentId} → insights adherence chart (both parents)
+    const week = (vals) => ({ days: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d, i) => ({ d, adh: vals[i] })) });
+    await setDoc(doc(db, "weeklyStats", mom), week([100, 80, 100, 60, 100, 90, 100]));
+    await setDoc(doc(db, "weeklyStats", dad), week([80, 60, 100, 40, 80, 70, 90]));
 
     // recommendations/{familyId} (string[])
     await setDoc(doc(db, "recommendations", FAMILY_ID), {

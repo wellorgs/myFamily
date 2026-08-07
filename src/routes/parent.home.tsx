@@ -42,6 +42,8 @@ function Home() {
   const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
   const [familyCode, setFamilyCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Dismisses today's medicine prompt after the user acts on it (took it / snooze).
+  const [medDismissed, setMedDismissed] = useState(false);
 
   useEffect(() => {
     const loadFamilyCode = async () => {
@@ -141,7 +143,7 @@ function Home() {
           </SoftCard>
         )}
 
-        {todayCards.medicine.name ? (
+        {todayCards.medicine.name && !medDismissed ? (
           <SoftCard tone="blue">
             <div className="flex items-start gap-4">
               <IconBubble><Pill className="w-6 h-6 text-primary" /></IconBubble>
@@ -150,8 +152,8 @@ function Home() {
                 <div className="text-xl font-semibold mt-1">{todayCards.medicine.name} · {todayCards.medicine.dose}</div>
                 <div className="text-sm text-muted-foreground mt-0.5">{todayCards.medicine.food}</div>
                 <div className="flex gap-2 mt-4">
-                  <Button className="rounded-full h-11 px-5" onClick={() => toast.success("Marked as taken. Family notified.")}>I Took It</Button>
-                  <Button variant="secondary" className="rounded-full h-11 px-5" onClick={() => toast("Reminder set for 15 min")}>Remind me later</Button>
+                  <Button className="rounded-full h-11 px-5" onClick={() => { setMedDismissed(true); toast.success("Marked as taken. Family notified."); }}>I Took It</Button>
+                  <Button variant="secondary" className="rounded-full h-11 px-5" onClick={() => { setMedDismissed(true); toast("Reminder set for 15 min"); }}>Remind me later</Button>
                 </div>
               </div>
             </div>

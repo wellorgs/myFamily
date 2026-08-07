@@ -3,6 +3,7 @@ import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { useAppState } from "@/lib/app-state";
 import { useInsights } from "@/lib/queries/use-insights";
+import { useParents } from "@/lib/queries/use-parents";
 import { useRecommendations } from "@/lib/queries/use-recommendations";
 import { useWeeklyChart } from "@/lib/queries/use-weekly-chart";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -21,9 +22,13 @@ const toneClass: Record<string, string> = {
 
 function Insights() {
   const { parentId, familyId } = useAppState();
-  const { data: insights } = useInsights(parentId);
+  // A family member has no parentId of their own, so fall back to the first parent
+  // in the family — insights are always about a specific parent's data.
+  const { data: parents } = useParents(familyId);
+  const focusParentId = parentId || parents?.[0]?.id || "";
+  const { data: insights } = useInsights(focusParentId);
   const { data: recommendations } = useRecommendations(familyId);
-  const { data: weeklyChart } = useWeeklyChart(parentId);
+  const { data: weeklyChart } = useWeeklyChart(focusParentId);
 
   if (!insights || !recommendations || !weeklyChart) return null;
 

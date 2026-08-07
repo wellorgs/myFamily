@@ -1,8 +1,10 @@
 import {
   addDoc,
+  doc,
   collection,
   getFirestore,
   serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { firebaseApp, firebaseAuth } from "@/integrations/firebase/client";
 import { FIRESTORE_COLLECTIONS } from "@/lib/firebase-schema";
@@ -25,16 +27,34 @@ export async function saveScannedMedicine(input: ScannedMedicineInput): Promise<
   if (!user) throw new Error("You must be signed in to save a medicine.");
 
   const db = getFirestore(firebaseApp);
+  // Write the SAME field names the UI reads (dose/freq/food/stock/verified) so a
+  // scanned medicine renders identically to a seeded one. `instructions` maps to
+  // the "food"/how-to-take line the cards display.
   const ref = await addDoc(collection(db, FIRESTORE_COLLECTIONS.medicines), {
     parentId: user.uid,
     familyId: input.familyId || null,
     name: input.name,
-    dosage: input.dosage ?? null,
-    frequency: input.frequency ?? null,
-    instructions: input.instructions ?? null,
+    dose: input.dosage ?? "",
+    freq: input.frequency ?? "As directed",
+    food: input.instructions ?? "",
+    stock: 30,
+    verified: false,
     status: "pending",
     createdBy: user.uid,
     createdAt: serverTimestamp(),
   });
   return ref.id;
+}
+
+/** Approve a pending medicine — marks it verified so reminders can start. */
+export async function approveMedicine(medicineId: string): Promise<void> {
+  const user = firebaseAuth.currentUser;
+  if (!user) throw new Error("You must be signed in to approve a medicine.");
+  const db = getFirestore(firebaseApp);
+  await updateDoc(doc(db, FIRESTORE_COLLECTIONS.medicines, medicineId), {
+    verified: true,
+    status: "approved",
+    approvedBy: user.uid,
+    approvedAt: serverTimestamp(),
+  });
 }

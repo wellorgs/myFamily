@@ -80,11 +80,17 @@ export const parents = [
   { id: "dad", name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago", wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42 },
 ];
 
+// 8 tiles, in the order use-insights overrides them from Firestore. Each needs
+// key/label/tone (kept here) plus value/trend (overridden for real accounts).
 export const insights = [
-  { title: "Consistent Medication", value: "98%", icon: "pill" },
-  { title: "Steps Today", value: "8,500", icon: "footsteps" },
-  { title: "Water Intake", value: "2L / 8 cups", icon: "droplet" },
-  { title: "Sleep Quality", value: "Good", icon: "moon" },
+  { key: "adherence", label: "Medicine adherence", value: "92%", trend: "+4% this week", tone: "green" },
+  { key: "walking", label: "Walking", value: "5.2k avg", trend: "Up from 4.6k", tone: "green" },
+  { key: "sleep", label: "Sleep", value: "7h 10m", trend: "Steady", tone: "green" },
+  { key: "mood", label: "Mood", value: "Positive", trend: "Improving", tone: "green" },
+  { key: "phone", label: "Phone usage", value: "2h 40m", trend: "Normal", tone: "amber" },
+  { key: "hydration", label: "Hydration", value: "6/8", trend: "On track", tone: "green" },
+  { key: "fallRisk", label: "Fall risk", value: "Low", trend: "No incidents", tone: "green" },
+  { key: "social", label: "Social contact", value: "3 calls", trend: "Today", tone: "green" },
 ];
 
 // Consumed as string[] (rendered directly as text in family.insights).
