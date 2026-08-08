@@ -68,7 +68,7 @@ const callContactFor = (title: string): CallContact =>
       ? { name: "Priya", emoji: "👩🏽", relation: "Daughter" }
       : title.toLowerCase().includes("arjun")
         ? { name: "Arjun", emoji: "👨🏽", relation: "Son" }
-        : { name: "Mom (Anita)", emoji: "👩🏽‍🦳", relation: "Parent" };
+        : { name: "Mom (Anita)", emoji: "👵🏽", relation: "Parent" };
 
 function Notifications() {
   const { familyId } = useAppState();

@@ -30,6 +30,19 @@ function Insights() {
   const { data: recommendations } = useRecommendations(familyId);
   const { data: weeklyChart } = useWeeklyChart(focusParentId);
 
+  if (parents && parents.length === 0) {
+    return (
+      <Screen title="AI Insights" subtitle="Trends, patterns, gentle nudges.">
+        <SoftCard className="text-center py-10 space-y-3">
+          <div className="text-lg font-semibold">No insights yet</div>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Link a parent to start seeing trends in their medicine, activity, and wellbeing here.
+          </p>
+        </SoftCard>
+      </Screen>
+    );
+  }
+
   if (!insights || !recommendations || !weeklyChart) return null;
 
   return (

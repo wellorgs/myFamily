@@ -4,7 +4,7 @@ import { SoftCard } from "@/components/mobile/Card";
 import { AccessibilitySettings } from "@/components/mobile/AccessibilitySettings";
 import { useAppState } from "@/lib/app-state";
 import { signOutApp } from "@/lib/firebase-auth";
-import { Bell, Globe, Users, Lock, LogOut, Trash2, Crown, ChevronRight, Smartphone, Copy, Check, Share2 } from "lucide-react";
+import { Bell, Users, Lock, LogOut, Trash2, Crown, ChevronRight, Smartphone, Copy, Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { getCurrentUserFamily } from "@/lib/family-operations";
@@ -51,7 +51,6 @@ function Profile() {
     { icon: Bell, label: "Notifications", to: "/notifications" },
     { icon: Users, label: "Linked parents", onClick: () => toast("2 parents linked") },
     { icon: Smartphone, label: "Devices", onClick: () => toast("Manage devices") },
-    { icon: Globe, label: "Language", value: "English", onClick: () => toast("Language") },
     { icon: Lock, label: "Privacy", onClick: () => toast("Privacy") },
     { icon: Crown, label: "Plans & pricing", to: "/pricing" },
   ] as const;

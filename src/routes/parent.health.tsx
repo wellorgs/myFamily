@@ -12,6 +12,7 @@ import { useAppState } from "@/lib/app-state";
 import { isMockAccount } from "@/lib/account-utils";
 import { addDoc, collection, getFirestore, serverTimestamp } from "firebase/firestore";
 import { firebaseApp } from "@/integrations/firebase/client";
+import { useTodayCards } from "@/lib/queries/use-today-cards";
 
 const READING_TYPES = ["Blood pressure", "Sugar (fasting)", "Heart rate", "Weight"];
 
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/parent/health")({
 
 function Health() {
   const { parentId, email } = useAppState();
+  // Same source parent.home reads, so Walking/Hydration here can't disagree with Home.
+  const { data: todayCards } = useTodayCards(parentId);
   const [open, setOpen] = useState(false);
   const [type, setType] = useState(READING_TYPES[0]);
   const [value, setValue] = useState("");
@@ -97,14 +100,14 @@ function Health() {
     {
       icon: <Droplets className="w-6 h-6 text-warning" />,
       label: "HYDRATION",
-      value: "4 / 8",
+      value: todayCards ? `${todayCards.water.done} / ${todayCards.water.goal}` : "–",
       unit: "glasses",
       tone: "amber" as const,
     },
     {
       icon: <Footprints className="w-6 h-6 text-warning" />,
       label: "WALKING",
-      value: "1,820",
+      value: todayCards ? todayCards.walk.done.toLocaleString() : "–",
       unit: "steps",
       tone: "amber" as const,
     },
@@ -130,7 +133,9 @@ function Health() {
           </div>
           <h3 className="text-lg font-semibold mb-6">Steps trend</h3>
           <div className="flex items-end justify-between gap-2 h-32">
-            {[4200, 3800, 4500, 3200, 5100, 4700, 4200].map((val, i) => (
+            {/* Last bar (today) is pinned to the same real step count shown above and
+                on Home; the rest are illustrative until real daily history exists. */}
+            {[4200, 3800, 4500, 3200, 5100, 4700, todayCards?.walk.done ?? 4200].map((val, i) => (
               <div
                 key={i}
                 className="flex-1 flex flex-col items-center justify-end gap-2"

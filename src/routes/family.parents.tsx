@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard, StatusDot } from "@/components/mobile/Card";
+import { Button } from "@/components/ui/button";
+import { UserPlus } from "lucide-react";
 import { useAppState } from "@/lib/app-state";
 import { useParents } from "@/lib/queries/use-parents";
 
@@ -16,6 +18,22 @@ function ParentsList() {
   if (pathname !== "/family/parents") return <Outlet />;
 
   if (!parents) return null;
+
+  if (parents.length === 0) {
+    return (
+      <Screen title="Parents" subtitle="Choose someone to see details.">
+        <SoftCard className="text-center py-10 space-y-3">
+          <div className="text-lg font-semibold">No parents linked yet</div>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Ask your parent for their family invite code, or enter it below to connect and start seeing their health, medicines, and activity.
+          </p>
+          <Link to="/onboarding/family">
+            <Button className="rounded-full mt-2"><UserPlus className="w-4 h-4 mr-2" /> Link a parent</Button>
+          </Link>
+        </SoftCard>
+      </Screen>
+    );
+  }
 
   return (
     <Screen title="Parents" subtitle="Choose someone to see details.">

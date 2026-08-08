@@ -37,14 +37,14 @@ function Dashboard() {
 
   const openCall = (id: string, mode: "audio" | "video" = "audio", direction: "incoming" | "outgoing" = "outgoing") => {
     const p = parents.find((x) => x.id === id)!;
-    setCallContact({ name: p.name, emoji: id === "mom" ? "👩🏽‍🦳" : "👴🏽", relation: id === "mom" ? "Mom" : "Dad" });
+    setCallContact({ name: p.name, emoji: /mom|anita|mother|mum/i.test(id) ? "👵🏽" : "👴🏽", relation: id === "mom" ? "Mom" : "Dad" });
     setCallDir(direction);
     setCallMode(mode);
     setCallOpen(true);
   };
   const openAction = (kind: ActionKind, id: string) => {
     const p = parents.find((x) => x.id === id)!;
-    setDialog({ kind, name: p.name, emoji: id === "mom" ? "👩🏽‍🦳" : "👴🏽" });
+    setDialog({ kind, name: p.name, emoji: /mom|anita|mother|mum/i.test(id) ? "👵🏽" : "👴🏽" });
     setDialogOpen(true);
   };
   const openAlert = (a: (typeof alerts)[number]) => {
@@ -76,7 +76,7 @@ function Dashboard() {
           <SoftCard key={p.id} tone={p.status === "safe" ? "green" : "amber"}>
             <Link to="/family/parents/$id" params={{ id: p.id }} className="block">
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-card grid place-items-center text-2xl">{p.id === "mom" ? "👩🏽‍🦳" : "👴🏽"}</div>
+                <div className="w-14 h-14 rounded-2xl bg-card grid place-items-center text-2xl">{/mom|anita|mother|mum/i.test(p.id) ? "👵🏽" : "👴🏽"}</div>
                 <div className="flex-1">
                   <div className="font-semibold text-lg">{p.name}</div>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -101,7 +101,7 @@ function Dashboard() {
               <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => openCall(p.id, "video")} aria-label={`Video call ${p.name}`}><Video className="w-4 h-4" /></Button>
               <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => openAction("text", p.id)} aria-label={`Message ${p.name}`}><MessageSquare className="w-4 h-4" /></Button>
               <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => {
-                setMediaItem({ kind: "photo", from: p.name, emoji: p.id === "mom" ? "👩🏽‍🦳" : "👴🏽", time: p.lastSeen, caption: "Live location · Home", gradient: "from-emerald-200 via-teal-200 to-sky-200", scene: "🗺️📍" });
+                setMediaItem({ kind: "photo", from: p.name, emoji: /mom|anita|mother|mum/i.test(p.id) ? "👵🏽" : "👴🏽", time: p.lastSeen, caption: "Live location · Home", gradient: "from-emerald-200 via-teal-200 to-sky-200", scene: "🗺️📍" });
                 setMediaOpen(true);
               }} aria-label={`Locate ${p.name}`}><ShieldAlert className="w-4 h-4" /></Button>
             </div>

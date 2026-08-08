@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { Button } from "@/components/ui/button";
-import { Camera, CheckCircle2, Clock, AlertCircle, Loader } from "lucide-react";
+import { Camera, CheckCircle2, Clock, AlertCircle, Loader, Keyboard } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { getMedicineOCR } from "@/lib/gemini-ai";
@@ -10,6 +10,8 @@ import { useAppState } from "@/lib/app-state";
 import { useSetupStore } from "@/lib/setup-store";
 import { isMockAccount } from "@/lib/account-utils";
 import { saveScannedMedicine } from "@/lib/medicine-operations";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface MedicineData {
   medicineName: string | null;
@@ -27,15 +29,20 @@ export const Route = createFileRoute("/parent/medicine/scan")({
   component: Scan,
 });
 
-function Scan() {
-  const [step, setStep] = useState<"camera" | "detected" | "sent" | "error" | "processing">("camera");
+export function Scan() {
+  const [step, setStep] = useState<"camera" | "detected" | "sent" | "error" | "processing" | "manual">("camera");
+  const [manualName, setManualName] = useState("");
+  const [manualDosage, setManualDosage] = useState("");
+  const [manualFrequency, setManualFrequency] = useState("");
+  const [manualInstructions, setManualInstructions] = useState("");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [medicineData, setMedicineData] = useState<MedicineData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
-  const { parentId, familyId, email } = useAppState();
+  const { parentId, familyId, email, role } = useAppState();
+  const homeRoute = role === "parent" ? "/parent/home" : "/family/dashboard";
   const setupStore = useSetupStore(parentId);
   const [saving, setSaving] = useState(false);
 
@@ -62,6 +69,26 @@ function Scan() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleManualSubmit = () => {
+    if (!manualName.trim()) {
+      toast.error("Enter the medicine name.");
+      return;
+    }
+    // The "detected" step normally loads from sessionStorage (OCR result); clear
+    // any stale entry so it doesn't clobber this manually-entered data.
+    sessionStorage.removeItem("detectedMedicine");
+    setMedicineData({
+      medicineName: manualName.trim(),
+      dosage: manualDosage.trim() || null,
+      frequency: manualFrequency.trim() || null,
+      instructions: manualInstructions.trim() || null,
+      sideEffects: null,
+      expiryDate: null,
+      manufacturer: null,
+    });
+    setStep("detected");
   };
 
   useEffect(() => {
@@ -221,6 +248,9 @@ function Scan() {
           <Button className="w-full h-14 rounded-2xl text-base" onClick={capturePhoto} disabled={isLoading}>
             {isLoading ? "Processing..." : "Capture"}
           </Button>
+          <Button variant="ghost" className="w-full rounded-full" onClick={() => setStep("manual")}>
+            <Keyboard className="w-4 h-4 mr-2" /> No camera? Enter details manually
+          </Button>
         </div>
       )}
 
@@ -293,7 +323,7 @@ function Scan() {
           <Button
             variant="secondary"
             className="rounded-full"
-            onClick={() => navigate({ to: "/parent/home" })}
+            onClick={() => navigate({ to: homeRoute })}
           >
             Back home
           </Button>
@@ -324,11 +354,41 @@ function Scan() {
             <Button
               variant="secondary"
               className="rounded-full"
-              onClick={() => navigate({ to: "/parent/home" })}
+              onClick={() => navigate({ to: homeRoute })}
             >
               Back home
             </Button>
           </div>
+          <Button
+            variant="ghost"
+            className="rounded-full mt-1"
+            onClick={() => { setCameraError(null); setStep("manual"); }}
+          >
+            <Keyboard className="w-4 h-4 mr-2" /> Enter medicine details manually
+          </Button>
+        </SoftCard>
+      )}
+
+      {step === "manual" && (
+        <SoftCard className="space-y-4">
+          <div className="text-lg font-semibold">Add medicine manually</div>
+          <div>
+            <Label>Medicine name</Label>
+            <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="e.g. Metformin" className="h-12 rounded-2xl mt-1" />
+          </div>
+          <div>
+            <Label>Dosage</Label>
+            <Input value={manualDosage} onChange={(e) => setManualDosage(e.target.value)} placeholder="e.g. 500 mg" className="h-12 rounded-2xl mt-1" />
+          </div>
+          <div>
+            <Label>Frequency</Label>
+            <Input value={manualFrequency} onChange={(e) => setManualFrequency(e.target.value)} placeholder="e.g. Twice daily" className="h-12 rounded-2xl mt-1" />
+          </div>
+          <div>
+            <Label>Instructions</Label>
+            <Input value={manualInstructions} onChange={(e) => setManualInstructions(e.target.value)} placeholder="e.g. After food" className="h-12 rounded-2xl mt-1" />
+          </div>
+          <Button className="w-full h-12 rounded-2xl" onClick={handleManualSubmit}>Continue</Button>
         </SoftCard>
       )}
     </Screen>

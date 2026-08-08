@@ -4,7 +4,7 @@ import { SoftCard } from "@/components/mobile/Card";
 import { AccessibilitySettings } from "@/components/mobile/AccessibilitySettings";
 import { useAppState } from "@/lib/app-state";
 import { signOutApp } from "@/lib/firebase-auth";
-import { ChevronRight, Bell, Globe, Users, Lock, LogOut, Trash2, HeartPulse, ShieldAlert, Crown } from "lucide-react";
+import { ChevronRight, Bell, Users, Lock, LogOut, Trash2, HeartPulse, ShieldAlert, Crown } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/parent/profile")({
@@ -19,7 +19,6 @@ function Profile() {
   const items = [
     { icon: HeartPulse, label: "Medical information", onClick: () => toast("Opening medical info") },
     { icon: ShieldAlert, label: "Emergency contacts", onClick: () => toast("Manage emergency contacts") },
-    { icon: Globe, label: "Language", value: "English", onClick: () => toast("Language settings") },
     { icon: Bell, label: "Notifications", to: "/notifications" },
     { icon: Users, label: "Linked family", onClick: () => toast("2 members linked") },
     { icon: Lock, label: "Privacy", onClick: () => toast("Privacy settings") },
@@ -30,7 +29,7 @@ function Profile() {
   return (
     <Screen title="Profile">
       <SoftCard className="flex items-center gap-4 mb-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 grid place-items-center text-2xl">👴🏽</div>
+        <div className="w-16 h-16 rounded-full bg-primary/10 grid place-items-center text-2xl">{/mom|anita|mother|mum/i.test(name) ? "👵🏽" : "👴🏽"}</div>
         <div>
           <div className="text-xl font-semibold">{name}</div>
           <div className="text-sm text-muted-foreground">Parent · Free plan</div>

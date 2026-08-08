@@ -44,7 +44,7 @@ function Meds() {
       title="Medicines"
       subtitle="Approve, schedule, and track."
       right={
-        <Link to="/parent/medicine/scan" aria-label="Scan" className="w-11 h-11 rounded-full bg-muted flex items-center justify-center">
+        <Link to="/family/medicine/scan" aria-label="Scan" className="w-11 h-11 rounded-full bg-muted flex items-center justify-center">
           <ScanLine className="w-5 h-5" />
         </Link>
       }
@@ -55,7 +55,7 @@ function Meds() {
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
             Scan a medicine label to add one. It appears here for the whole family to see and approve.
           </p>
-          <Link to="/parent/medicine/scan">
+          <Link to="/family/medicine/scan">
             <Button className="rounded-full mt-2"><ScanLine className="w-4 h-4 mr-2" /> Scan medicine</Button>
           </Link>
         </SoftCard>
@@ -85,7 +85,7 @@ function Meds() {
               </div>
             </SoftCard>
           ))}
-          <Link to="/parent/medicine/scan" className="block">
+          <Link to="/family/medicine/scan" className="block">
             <Button variant="secondary" className="w-full h-12 rounded-2xl">
               <Plus className="w-4 h-4 mr-2" /> Add medicine
             </Button>

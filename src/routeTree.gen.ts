@@ -34,6 +34,7 @@ import { Route as ParentHomeRouteImport } from './routes/parent.home'
 import { Route as ParentProfileRouteImport } from './routes/parent.profile'
 import { Route as SetupCompleteRouteImport } from './routes/setup.complete'
 import { Route as FamilyAppointmentsNewRouteImport } from './routes/family.appointments.new'
+import { Route as FamilyMedicineScanRouteImport } from './routes/family.medicine.scan'
 import { Route as FamilyParentsIdRouteImport } from './routes/family.parents.$id'
 import { Route as ParentMedicineScanRouteImport } from './routes/parent.medicine.scan'
 
@@ -162,6 +163,11 @@ const FamilyAppointmentsNewRoute = FamilyAppointmentsNewRouteImport.update({
   path: '/appointments/new',
   getParentRoute: () => FamilyRoute,
 } as any)
+const FamilyMedicineScanRoute = FamilyMedicineScanRouteImport.update({
+  id: '/medicine/scan',
+  path: '/medicine/scan',
+  getParentRoute: () => FamilyRoute,
+} as any)
 const FamilyParentsIdRoute = FamilyParentsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
+  '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
   '/parent/medicine/scan': typeof ParentMedicineScanRoute
 }
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
+  '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
   '/parent/medicine/scan': typeof ParentMedicineScanRoute
 }
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
+  '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
   '/parent/medicine/scan': typeof ParentMedicineScanRoute
 }
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/parent/profile'
     | '/setup/complete'
     | '/family/appointments/new'
+    | '/family/medicine/scan'
     | '/family/parents/$id'
     | '/parent/medicine/scan'
   fileRoutesByTo: FileRoutesByTo
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/parent/profile'
     | '/setup/complete'
     | '/family/appointments/new'
+    | '/family/medicine/scan'
     | '/family/parents/$id'
     | '/parent/medicine/scan'
   id:
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/parent/profile'
     | '/setup/complete'
     | '/family/appointments/new'
+    | '/family/medicine/scan'
     | '/family/parents/$id'
     | '/parent/medicine/scan'
   fileRoutesById: FileRoutesById
@@ -543,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FamilyAppointmentsNewRouteImport
       parentRoute: typeof FamilyRoute
     }
+    '/family/medicine/scan': {
+      id: '/family/medicine/scan'
+      path: '/medicine/scan'
+      fullPath: '/family/medicine/scan'
+      preLoaderRoute: typeof FamilyMedicineScanRouteImport
+      parentRoute: typeof FamilyRoute
+    }
     '/family/parents/$id': {
       id: '/family/parents/$id'
       path: '/$id'
@@ -579,6 +598,7 @@ interface FamilyRouteChildren {
   FamilyParentsRoute: typeof FamilyParentsRouteWithChildren
   FamilyProfileRoute: typeof FamilyProfileRoute
   FamilyAppointmentsNewRoute: typeof FamilyAppointmentsNewRoute
+  FamilyMedicineScanRoute: typeof FamilyMedicineScanRoute
 }
 
 const FamilyRouteChildren: FamilyRouteChildren = {
@@ -588,6 +608,7 @@ const FamilyRouteChildren: FamilyRouteChildren = {
   FamilyParentsRoute: FamilyParentsRouteWithChildren,
   FamilyProfileRoute: FamilyProfileRoute,
   FamilyAppointmentsNewRoute: FamilyAppointmentsNewRoute,
+  FamilyMedicineScanRoute: FamilyMedicineScanRoute,
 }
 
 const FamilyRouteWithChildren =
