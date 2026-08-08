@@ -11,6 +11,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
   getFirestore, doc, setDoc, collection, serverTimestamp, Timestamp,
+  query, where, getDocs, deleteDoc,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -73,6 +74,21 @@ async function seedFamilyData() {
       created_at: serverTimestamp(), updated_at: serverTimestamp(),
     }, { merge: true });
 
+    // Purge any prior auto-id duplicates (earlier seed runs used addDoc, which
+    // stacked duplicate rows every run). Delete by family/parent, then rewrite
+    // with deterministic ids below.
+    const purge = async (coll, field, value) => {
+      const snap = await getDocs(query(collection(db, coll), where(field, "==", value)));
+      for (const d of snap.docs) await deleteDoc(d.ref);
+    };
+    await purge("medicines", "familyId", FAMILY_ID);
+    await purge("notifications", "familyId", FAMILY_ID);
+    await purge("media_posts", "familyId", FAMILY_ID);
+    for (const pid of [mom, dad]) {
+      await purge("events", "parentId", pid);
+      await purge("timeline", "parentId", pid);
+    }
+
     // parents/{uid}: carries BOTH the child-dashboard fields and the
     // parent-home today-cards fields, keyed by the parent's uid.
     await setDoc(doc(db, "parents", mom), {
@@ -101,7 +117,9 @@ async function seedFamilyData() {
       { parentId: dad, name: "Atorvastatin", dose: "10 mg", freq: "1x night", food: "After dinner", stock: 24, verified: false, status: "pending" },
     ];
     for (const m of meds) {
-      await setDoc(doc(collection(db, "medicines")), { ...m, familyId: FAMILY_ID, createdAt: serverTimestamp() });
+      // Deterministic id so re-running the seed overwrites instead of duplicating.
+      const id = `${m.parentId}_${m.name}`.replace(/[^A-Za-z0-9_]/g, "");
+      await setDoc(doc(db, "medicines", id), { ...m, familyId: FAMILY_ID, createdAt: serverTimestamp() });
     }
 
     // timeline (queried by parentId, ordered by timestamp)
@@ -115,9 +133,9 @@ async function seedFamilyData() {
       { time: "9:12 PM", label: "Phone charging started" },
     ];
     let t = Date.now();
-    for (const e of tl) {
-      await setDoc(doc(collection(db, "timeline")), {
-        parentId: mom, time: e.time, label: e.label, tone: "blue",
+    for (let i = 0; i < tl.length; i++) {
+      await setDoc(doc(db, "timeline", `${mom}_tl_${i}`), {
+        parentId: mom, time: tl[i].time, label: tl[i].label, tone: "blue",
         timestamp: Timestamp.fromMillis(t),
       });
       t -= 60 * 60 * 1000;
@@ -129,8 +147,8 @@ async function seedFamilyData() {
       { tone: "blue", title: "Mom completed her walk (3,200 steps)", time: "1h ago" },
       { tone: "amber", title: "Dad's phone battery low (42%)", time: "2h ago" },
     ];
-    for (const a of alerts) {
-      await setDoc(doc(collection(db, "notifications")), { ...a, familyId: FAMILY_ID, createdAt: serverTimestamp() });
+    for (let i = 0; i < alerts.length; i++) {
+      await setDoc(doc(db, "notifications", `${FAMILY_ID}_alert_${i}`), { ...alerts[i], familyId: FAMILY_ID, createdAt: serverTimestamp() });
     }
 
     // insights/{parentId} (flat fields the hook overrides onto the labels) — seed
@@ -168,8 +186,8 @@ async function seedFamilyData() {
       { time: "6:30 PM", label: "Evening walk reminder" },
       { time: "9:00 PM", label: "Night medicine — Atorvastatin" },
     ];
-    for (const e of events) {
-      await setDoc(doc(collection(db, "events")), { parentId: mom, time: e.time, label: e.label });
+    for (let i = 0; i < events.length; i++) {
+      await setDoc(doc(db, "events", `${mom}_ev_${i}`), { parentId: mom, time: events[i].time, label: events[i].label });
     }
 
     // media_posts → family feed (queried by familyId, ordered by createdAt)
@@ -177,8 +195,8 @@ async function seedFamilyData() {
       { kind: "voice", from: "Priya", emoji: "👩🏽", time: "10 min ago", caption: "Hi Mom, don't forget your walk 💙" },
       { kind: "photo", from: "Arjun", emoji: "👨🏽", time: "2h ago", caption: "Weekend trip photos", scene: "🏞️" },
     ];
-    for (const f of feed) {
-      await setDoc(doc(collection(db, "media_posts")), { ...f, familyId: FAMILY_ID, createdAt: serverTimestamp() });
+    for (let i = 0; i < feed.length; i++) {
+      await setDoc(doc(db, "media_posts", `${FAMILY_ID}_post_${i}`), { ...feed[i], familyId: FAMILY_ID, createdAt: serverTimestamp() });
     }
 
     console.log("  ✓ family + parent data (parents, medicines, timeline, alerts, insights, weeklyStats, recommendations, feed)");

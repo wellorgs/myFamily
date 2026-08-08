@@ -60,19 +60,38 @@ function AuthPage() {
   };
 
   const handleSignUp = async () => {
+    if (!signUpName.trim()) {
+      toast.error("Please enter your full name.");
+      return;
+    }
+    if (!signUpEmailAddress.trim()) {
+      toast.error("Please enter your email.");
+      return;
+    }
+    if (signUpPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
     try {
       setBusy(true);
       await signUpEmail({
         email: signUpEmailAddress,
         password: signUpPassword,
-        fullName: signUpName || "myFamily user",
+        fullName: signUpName.trim(),
         role: getState().role,
         language: getState().lang,
       });
       goNext();
       toast.success("Account created");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Sign up failed");
+      // Map raw Firebase auth codes to friendly copy; never surface provider internals.
+      const code = (error as { code?: string })?.code ?? "";
+      const msg =
+        code === "auth/email-already-in-use" ? "That email is already registered. Try signing in." :
+        code === "auth/invalid-email" ? "That email address doesn't look right." :
+        code === "auth/weak-password" ? "Password must be at least 6 characters." :
+        "Couldn't create your account. Please try again.";
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

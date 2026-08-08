@@ -2,7 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Heart, Activity, Moon, Droplets, Footprints, Pill } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { useAppState } from "@/lib/app-state";
+import { isMockAccount } from "@/lib/account-utils";
+import { addDoc, collection, getFirestore, serverTimestamp } from "firebase/firestore";
+import { firebaseApp } from "@/integrations/firebase/client";
+
+const READING_TYPES = ["Blood pressure", "Sugar (fasting)", "Heart rate", "Weight"];
 
 export const Route = createFileRoute("/parent/health")({
   head: () => ({
@@ -15,6 +26,38 @@ export const Route = createFileRoute("/parent/health")({
 });
 
 function Health() {
+  const { parentId, email } = useAppState();
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState(READING_TYPES[0]);
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleLog = async () => {
+    if (!value.trim()) {
+      toast.error("Enter a value.");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (!isMockAccount(email)) {
+        const db = getFirestore(firebaseApp);
+        await addDoc(collection(db, "vitals"), {
+          parentId,
+          type,
+          value: value.trim(),
+          createdAt: serverTimestamp(),
+        });
+      }
+      toast.success(`${type} logged.`);
+      setValue("");
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const readings = [
     {
       icon: <Heart className="w-6 h-6 text-destructive" />,
@@ -127,10 +170,39 @@ function Health() {
         </div>
 
         {/* Log reading CTA */}
-        <Button className="w-full h-12 rounded-2xl text-base">
+        <Button className="w-full h-12 rounded-2xl text-base" onClick={() => setOpen(true)}>
           Log a reading
         </Button>
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log a reading</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Type</Label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="h-12 w-full rounded-2xl mt-1 border border-input bg-background px-3 text-sm"
+              >
+                {READING_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Value</Label>
+              <Input value={value} onChange={(e) => setValue(e.target.value)} placeholder="e.g. 122/78" className="h-12 rounded-2xl mt-1" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button className="w-full h-12 rounded-2xl" disabled={saving} onClick={handleLog}>
+              {saving ? "Saving…" : "Save reading"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Screen>
   );
 }

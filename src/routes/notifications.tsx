@@ -71,9 +71,8 @@ const callContactFor = (title: string): CallContact =>
         : { name: "Mom (Anita)", emoji: "👩🏽‍🦳", relation: "Parent" };
 
 function Notifications() {
-  const user = firebaseAuth.currentUser;
-  const userId = user?.uid || "";
-  const { data: notificationItems } = useNotificationItems(userId);
+  const { familyId } = useAppState();
+  const { data: notificationItems } = useNotificationItems(familyId);
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const activeFilter: FilterKey =

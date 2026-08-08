@@ -20,36 +20,10 @@ const listeners = new Set<() => void>();
 // MUST be declared before loadLog() to avoid SSR initialization errors.
 const now = Date.now();
 
-const SEED_LOG: ActivityEntry[] = [
-  {
-    id: "sa_1",
-    kind: "love",
-    targetId: "seed:voice:priya",
-    targetLabel: "Voice note from Priya",
-    targetEmoji: "👩🏽",
-    from: "Priya",
-    at: now - 1000 * 60 * 12,
-  },
-  {
-    id: "sa_2",
-    kind: "reply",
-    targetId: "seed:photo:arjun",
-    targetLabel: "Photo from Arjun",
-    targetEmoji: "👨🏽",
-    from: "Arjun",
-    note: "Beautiful! Love the sunset.",
-    at: now - 1000 * 60 * 55,
-  },
-  {
-    id: "sa_3",
-    kind: "save",
-    targetId: "seed:photo:arjun",
-    targetLabel: "Photo from Arjun",
-    targetEmoji: "👨🏽",
-    from: "Arjun",
-    at: now - 1000 * 60 * 55,
-  },
-];
+// Activity is the user's own in-app interactions (love/reply/save). Start empty
+// so a fresh account never sees another family's fabricated activity; entries
+// accrue as the real user acts.
+const SEED_LOG: ActivityEntry[] = [];
 
 function loadLog(): ActivityEntry[] {
   if (typeof window === "undefined") return SEED_LOG;

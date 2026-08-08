@@ -72,7 +72,7 @@ async function loadProfile(user: User) {
     email: user.email ?? "",
     role: role ?? getState().role,
     lang: (data?.language as Lang | undefined) ?? getState().lang,
-    familyId: (data?.family_id as string | undefined) ?? "family_test_001",
+    familyId: (data?.family_id as string | undefined) ?? "",
     parentId: resolvedParentId,
   });
 
@@ -119,6 +119,24 @@ export async function signUpEmail(input: {
   if (!credential.user.emailVerified) {
     await sendEmailVerification(credential.user);
   }
+
+  // Persist a profile doc at signup with the entered name + role and NO family yet,
+  // so onboarding doesn't re-ask for the name and the user isn't placed in any family.
+  const db = getFirestore(firebaseApp);
+  await setDoc(
+    doc(db, "profiles", credential.user.uid),
+    {
+      id: credential.user.uid,
+      full_name: input.fullName || "",
+      email: input.email,
+      role: input.role ?? getState().role ?? null,
+      family_id: "",
+      ...(input.language && { language: input.language }),
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
+    },
+    { merge: true }
+  );
 
   await loadProfile(credential.user);
 

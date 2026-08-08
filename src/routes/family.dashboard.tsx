@@ -135,13 +135,6 @@ function Dashboard() {
           <Link to="/family/insights"><Quick icon={<HeartPulse className="w-5 h-5" />} label="Insights" /></Link>
         </div>
 
-        <button
-          onClick={() => openCall("dad", "audio", "incoming")}
-          className="mt-4 w-full h-11 rounded-2xl bg-muted/60 hover:bg-muted text-sm font-medium flex items-center justify-center gap-2 text-muted-foreground"
-        >
-          <PhoneIncoming className="w-4 h-4" /> Simulate incoming call from Dad
-        </button>
-
         <ActivityStrip />
       </div>
       {dialog && (

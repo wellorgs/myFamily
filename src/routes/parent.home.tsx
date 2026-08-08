@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { Button } from "@/components/ui/button";
-import { useAppState } from "@/lib/app-state";
+import { useAppState, useHydrated } from "@/lib/app-state";
 import { useTodayCards } from "@/lib/queries/use-today-cards";
 import { useUpcomingEvents } from "@/lib/queries/use-upcoming-events";
 import { Pill, Stethoscope, Footprints, Droplets, MessageCircleHeart, Bell, ShieldAlert, Copy, Check, MessageSquare, Share2 } from "lucide-react";
@@ -79,7 +79,10 @@ function Home() {
   };
 
   const openMedia = (m: MediaItem) => { setMediaItem(m); setMediaOpen(true); };
-  const greeting = getGreeting(t);
+  // Time-based greeting is non-deterministic across SSR (server TZ) and client, so
+  // gate it behind hydration to avoid a hydration mismatch — neutral until mounted.
+  const hydrated = useHydrated();
+  const greeting = hydrated ? getGreeting(t) : t("g.morning");
 
   const steps = getStepsForRole((role as "parent" | "family") || "parent");
   const isSetupComplete = setupStore.getAllDone(steps.map((s) => s.id));
@@ -255,8 +258,8 @@ function Home() {
             <h2 className="text-lg font-semibold mt-4 mb-2 px-1">Upcoming today</h2>
             <SoftCard className="p-2">
               <ul className="divide-y">
-                {upcomingEvents.map((e) => (
-                  <li key={e.time} className="flex items-center gap-4 px-3 py-3">
+                {upcomingEvents.map((e, i) => (
+                  <li key={`${e.time}-${e.label}-${i}`} className="flex items-center gap-4 px-3 py-3">
                     <div className="text-sm font-semibold w-16 text-muted-foreground">{e.time}</div>
                     <div className="text-base">{e.label}</div>
                   </li>

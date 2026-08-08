@@ -1,15 +1,11 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
-import { parents } from "@/lib/mock-data";
 import { useTimeline } from "@/lib/queries/use-timeline";
 import { useMedicines } from "@/lib/queries/use-medicines";
 import { useAppointments } from "@/lib/queries/use-appointments";
+import { useParents } from "@/lib/queries/use-parents";
 import { useAppState } from "@/lib/app-state";
-import { firebaseAuth } from "@/integrations/firebase/client";
-import { isMockAccount } from "@/lib/account-utils";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { firebaseApp } from "@/integrations/firebase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Phone, MessageSquare, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,35 +13,38 @@ import { useState } from "react";
 import { ActionDialog, type ActionKind } from "@/components/mobile/ActionDialog";
 
 export const Route = createFileRoute("/family/parents/$id")({
-  head: ({ params }) => ({ meta: [{ title: `${params.id === "mom" ? "Mom" : "Dad"} — myFamily` }] }),
-  loader: async ({ params }) => {
-    const user = firebaseAuth.currentUser;
-    if (!user) throw notFound();
-
-    if (isMockAccount(user.email)) {
-      const p = parents.find((x) => x.id === params.id);
-      if (!p) throw notFound();
-      return { parent: p };
-    }
-
-    const db = getFirestore(firebaseApp);
-    const docRef = doc(db, "parents", params.id);
-    const snapshot = await getDoc(docRef);
-    if (!snapshot.exists()) throw notFound();
-    return { parent: { id: snapshot.id, ...snapshot.data() } };
-  },
+  head: () => ({ meta: [{ title: "Parent — myFamily" }] }),
   component: Details,
 });
 
+// Data is fetched client-side (not in a loader) because the loader runs during
+// SSR where firebaseAuth.currentUser is null — which previously threw notFound()
+// and 404'd every deep link and card click.
 function Details() {
-  const { parent: p } = Route.useLoaderData();
-  const { data: timeline } = useTimeline(p.id);
-  const { data: medicines } = useMedicines(p.id);
-  const { data: appointments } = useAppointments(p.id);
+  const { id } = Route.useParams();
+  const { familyId } = useAppState();
+  const { data: parents } = useParents(familyId);
+  const { data: timeline } = useTimeline(id);
+  const { data: medicines } = useMedicines(id);
+  const { data: appointments } = useAppointments(id);
   const [dialogKind, setDialogKind] = useState<ActionKind | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const openDialog = (k: ActionKind) => { setDialogKind(k); setDialogOpen(true); };
-  const emoji = p.id === "mom" ? "👩🏽‍🦳" : "👴🏽";
+
+  if (!parents) return null;
+  const p = parents.find((x) => x.id === id);
+  if (!p) {
+    return (
+      <Screen title="Parent" back={true}>
+        <SoftCard className="text-center py-10">
+          <div className="text-lg font-semibold">Parent not found</div>
+          <p className="text-sm text-muted-foreground mt-1">They may have left the family or the link is out of date.</p>
+        </SoftCard>
+      </Screen>
+    );
+  }
+  const isMom = /mom|anita|mother|mum/i.test(`${p.id} ${p.name ?? ""}`);
+  const emoji = isMom ? "👵🏽" : "👴🏽";
 
   return (
     <Screen title={p.name} back={true}>

@@ -24,7 +24,7 @@ function ParentsList() {
           <Link key={p.id} to="/family/parents/$id" params={{ id: p.id }}>
             <SoftCard>
               <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-muted grid place-items-center text-2xl">{p.id === "mom" ? "👩🏽‍🦳" : "👴🏽"}</div>
+                <div className="w-14 h-14 rounded-2xl bg-muted grid place-items-center text-2xl">{/mom|anita|mother|mum/i.test(`${p.id} ${p.name ?? ""}`) ? "👵🏽" : "👴🏽"}</div>
                 <div className="flex-1">
                   <div className="font-semibold text-lg">{p.name}</div>
                   <div className="text-sm text-muted-foreground flex items-center gap-2">
