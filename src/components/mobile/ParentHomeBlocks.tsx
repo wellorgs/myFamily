@@ -41,7 +41,7 @@ export function CheckInCard({ parentId, familyId, email }: { parentId: string; f
 
   if (done) {
     return (
-      <div className="mx-[7px] rounded-[26px] bg-primary/10 p-4 flex items-center gap-3">
+      <div className="rounded-[26px] bg-primary/10 p-4 flex items-center gap-3">
         <CheckCircle size={28} weight="light" className="text-primary shrink-0" />
         <div className="text-[15px] font-semibold">You checked in today. Have a lovely day.</div>
       </div>
@@ -51,7 +51,7 @@ export function CheckInCard({ parentId, familyId, email }: { parentId: string; f
     <button
       onClick={checkIn}
       disabled={busy}
-      className="mx-[7px] w-[calc(100%-14px)] rounded-[26px] bg-primary text-primary-foreground pl-[18px] pr-2 py-3.5 flex items-center gap-3 text-left shadow-[0_10px_22px_-10px_oklch(0.58_0.13_163/0.7),inset_0_1px_0_oklch(1_0_0/0.3)] active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:opacity-60"
+      className="w-full rounded-[26px] bg-primary text-primary-foreground pl-[18px] pr-2 py-3.5 flex items-center gap-3 text-left shadow-[0_10px_22px_-10px_oklch(0.58_0.13_163/0.7),inset_0_1px_0_oklch(1_0_0/0.3)] active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] disabled:opacity-60"
     >
       <CheckCircle size={28} weight="light" className="shrink-0" />
       <span className="flex-1">

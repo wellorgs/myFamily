@@ -31,10 +31,10 @@ export function BottomNav({ role }: { role: "parent" | "family" }) {
 
   return (
     <nav
-      className="absolute inset-x-0 bottom-0 z-30 px-4 pt-2 safe-bottom safe-x pointer-events-none"
+      className="absolute inset-x-0 bottom-0 z-30 safe-bottom safe-x bg-background/90 backdrop-blur-xl border-t border-border"
       aria-label="Main navigation"
     >
-      <ul className="glass flex items-stretch justify-between gap-1 rounded-[34px] p-1.5 pointer-events-auto">
+      <ul className="flex items-stretch justify-between px-2 pt-1.5 pb-1">
         {items.map((it) => {
           const active = [it.to, ...(it.also ?? [])].some((p) => pathname === p || pathname.startsWith(p + "/"));
           const Icon = it.icon;
@@ -43,17 +43,17 @@ export function BottomNav({ role }: { role: "parent" | "family" }) {
               <Link
                 to={it.to}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 h-[56px] rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+                  "relative flex flex-col items-center justify-center gap-0.5 h-[50px] transition-colors duration-200",
                   active
-                    ? "text-primary bg-white/85 shadow-[0_3px_12px_-3px_oklch(0.3_0.06_165/0.3),inset_0_1px_0_#fff] font-semibold"
+                    ? "text-primary"
                     : "text-muted-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon size={24} weight={active ? "regular" : "light"} />
+                <Icon size={25} weight={active ? "fill" : "regular"} />
                 <span className="text-[10px] font-semibold">{it.label}</span>
                 {it.badge && unread > 0 && (
-                  <span className="absolute top-1 left-[54%] min-w-[17px] h-[17px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center ring-2 ring-white">
+                  <span className="absolute top-1 left-[54%] min-w-[17px] h-[17px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center ring-2 ring-background">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}

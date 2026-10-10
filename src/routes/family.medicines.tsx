@@ -127,7 +127,7 @@ function Meds() {
             </ul>
           )}
 
-          <Link to="/family/medicine/scan" className="mx-[7px] h-[54px] rounded-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-between pl-6 pr-1.5">
+          <Link to="/family/medicine/scan" className="h-[54px] rounded-full bg-secondary text-secondary-foreground font-semibold flex items-center justify-between pl-6 pr-1.5">
             Add medicine
             <span className="w-[42px] h-[42px] rounded-full bg-white/60 grid place-items-center"><Plus size={20} weight="light" /></span>
           </Link>

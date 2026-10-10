@@ -36,11 +36,11 @@ export function PersonHero({ name, age, photoUrl, vitals, online = true, classNa
   const first = name.split(" ")[0];
   return (
     <section className={cn("card-bz rounded-3xl p-2.5 flex gap-2.5", className)} aria-label={`${name} summary`}>
-      <div className="relative w-[46%] min-h-[196px] rounded-[18px] overflow-hidden bg-gradient-to-b from-[oklch(0.95_0.04_160)] to-[oklch(0.82_0.07_160)] shrink-0">
+      <div className="relative w-[46%] min-h-[196px] rounded-[14px] overflow-hidden bg-muted shrink-0">
         {photoUrl ? (
           <img src={photoUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <span className="absolute inset-0 grid place-items-center font-display text-[72px] font-bold tracking-tighter text-white/90" aria-hidden>
+          <span className="absolute inset-0 grid place-items-center font-display text-[44px] font-semibold text-foreground/25" aria-hidden>
             {first[0]?.toUpperCase()}
           </span>
         )}
@@ -54,7 +54,7 @@ export function PersonHero({ name, age, photoUrl, vitals, online = true, classNa
         {vitals.slice(0, 5).map((v) => {
           const Icon = v.icon;
           return (
-            <div key={v.key} className="rounded-[14px] bg-muted/60 px-2.5 py-2 min-w-0">
+            <div key={v.key} className="rounded-[12px] bg-muted px-2.5 py-2 min-w-0">
               <Icon size={17} weight="light" className={v.color} aria-hidden />
               <div className="font-display text-[15px] font-bold leading-tight mt-1 whitespace-nowrap">{v.value}</div>
               <div className="text-[10px] text-muted-foreground truncate">{v.unit || v.label}</div>
@@ -130,7 +130,7 @@ export type Tile = { to: string; label: string; icon: PhIcon };
 
 export function TileGrid({ tiles }: { tiles: Tile[] }) {
   return (
-    <div className="grid grid-cols-3 gap-3 mx-[7px]">
+    <div className="grid grid-cols-3 gap-3">
       {tiles.map(({ to, label, icon: Icon }) => (
         <Link key={label} to={to} className="rounded-[22px] bg-card py-3.5 flex flex-col items-center gap-2 min-h-[96px] shadow-[0_1px_2px_oklch(0.3_0.05_165/0.05),0_10px_24px_-14px_oklch(0.3_0.06_165/0.2)] border border-[oklch(0.3_0.05_165/0.05)] active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
           <span className="w-11 h-11 rounded-full grid place-items-center bg-primary/12 text-primary"><Icon size={23} weight="light" /></span>
@@ -161,7 +161,7 @@ export function RowCard({ title, meta, lead, primary, secondary, to, onClick }: 
       </div>
     </>
   );
-  const cls = "card-bz rounded-3xl p-4 block w-[calc(100%-14px)] text-left";
+  const cls = "card-bz rounded-3xl p-4 block w-full text-left";
   if (to) return <Link to={to} className={cls}>{body}</Link>;
   if (onClick) return <button onClick={onClick} className={cls}>{body}</button>;
   return <div className={cls}>{body}</div>;

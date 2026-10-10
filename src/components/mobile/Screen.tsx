@@ -50,7 +50,7 @@ export function Screen({
             )
           ) : null}
           <div className="flex-1 min-w-0">
-            {title && <h1 className="text-[30px] font-bold leading-tight tracking-tight truncate">{title}</h1>}
+            {title && <h1 className="text-[26px] font-bold leading-tight tracking-tight truncate">{title}</h1>}
             {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           {right}

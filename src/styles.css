@@ -9,10 +9,10 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
   --radius-sm: 12px;
   --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
-  --radius-2xl: 28px;
-  --radius-3xl: 32px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-3xl: 20px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -51,26 +51,26 @@
 }
 
 :root {
-  --radius: 24px;
+  --radius: 16px;
   --nav-height: 68px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   /* Vanilla / cream surfaces, deep-green ink, emerald as the action colour. */
-  --background: oklch(0.972 0.02 92);
+  --background: oklch(0.975 0.006 95);
   --foreground: oklch(0.24 0.04 165);
-  --card: oklch(0.995 0.006 92);
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.24 0.04 165);
   --popover: oklch(0.995 0.006 92);
   --popover-foreground: oklch(0.24 0.04 165);
   --primary: oklch(0.58 0.13 163);
   --primary-foreground: oklch(0.99 0.01 95);
-  --secondary: oklch(0.95 0.035 160);
-  --secondary-foreground: oklch(0.32 0.07 165);
-  --muted: oklch(0.955 0.016 92);
+  --secondary: oklch(0.945 0.005 95);
+  --secondary-foreground: oklch(0.24 0.02 165);
+  --muted: oklch(0.955 0.005 95);
   --muted-foreground: oklch(0.5 0.03 165);
-  --accent: oklch(0.945 0.04 160);
+  --accent: oklch(0.955 0.02 160);
   --accent-foreground: oklch(0.32 0.07 165);
   --destructive: oklch(0.62 0.21 25);
   --destructive-foreground: oklch(1 0 0);
@@ -253,20 +253,13 @@
 
 /* Soft vanilla canvas with faint green light so glass has something to blur. */
 @utility canvas-cream {
-  background-color: oklch(0.99 0.008 95);
-  background-image:
-    radial-gradient(90% 38% at 50% 0%, oklch(0.93 0.06 160 / 0.7), transparent 75%),
-    radial-gradient(60% 30% at 100% 30%, oklch(0.96 0.05 90 / 0.55), transparent 75%);
+  background-color: oklch(0.975 0.006 95);
 }
 
 /* Double-bezel card: a faint tray ring around a white machined core. */
 @utility card-bz {
   background: var(--card);
-  box-shadow:
-    0 0 0 6px oklch(0.3 0.05 165 / 0.04),
-    0 0 0 7px oklch(0.3 0.05 165 / 0.055),
-    inset 0 1px 0 oklch(1 0 0),
-    0 14px 30px -14px oklch(0.3 0.06 165 / 0.22);
-  margin-inline: 7px;
+  border: 1px solid oklch(0.3 0.02 165 / 0.08);
+  box-shadow: 0 1px 2px oklch(0.3 0.03 165 / 0.05);
 }
 @utility font-display { font-family: var(--font-display); }

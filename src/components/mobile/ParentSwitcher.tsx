@@ -30,7 +30,7 @@ export function FamilyTopBar({ right, everyone = false }: { right?: React.ReactN
           className="glass flex items-center gap-2 h-11 pl-1.5 pr-3 rounded-full text-[15px] font-semibold active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           aria-label="Switch parent"
         >
-          <span className="w-8 h-8 rounded-full bg-gradient-to-b from-[oklch(0.95_0.04_160)] to-[oklch(0.82_0.07_160)] grid place-items-center text-[13px] font-bold text-primary">
+          <span className="w-8 h-8 rounded-full bg-primary/12 grid place-items-center text-[13px] font-bold text-primary">
             {everyone ? "All" : selected ? initial(selected.name) : "+"}
           </span>
           {label}
