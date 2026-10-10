@@ -13,6 +13,7 @@ import {
 import { firebaseApp, firebaseAuth } from "@/integrations/firebase/client";
 import { useAppState } from "@/lib/app-state";
 import { getCurrentUserFamily } from "@/lib/family-operations";
+import { Avatar } from "@/components/mobile/KinBlocks";
 import { useFamilyMembers } from "@/lib/queries/use-family-members";
 import { useParents } from "@/lib/queries/use-parents";
 import { useDashboardGuard } from "@/lib/route-guards";
@@ -76,7 +77,7 @@ function Circle() {
               const isOwner = m.id === owner;
               return (
                 <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                  <span className="w-10 h-10 rounded-full bg-primary/12 text-primary grid place-items-center text-sm font-bold">{(m.name ?? "?")[0]?.toUpperCase()}</span>
+                  <Avatar name={m.name ?? "?"} className="w-10 h-10 text-sm" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[15.5px] font-semibold truncate">{m.name ?? "Family member"}{mine ? " (you)" : ""}</div>
                     <div className="text-[12.5px] text-muted-foreground">{isOwner ? "Owner" : m.relation ?? (m.role === "parent" ? "Parent" : "Family member")}</div>

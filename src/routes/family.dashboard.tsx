@@ -121,7 +121,7 @@ function Dashboard() {
         )}
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2">
-          <span className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", selected.status === "safe" ? "text-primary" : "text-[oklch(0.55_0.13_65)]")}>
+          <span className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", selected.status === "safe" ? "text-foreground" : "text-foreground")}>
             <span className={cn("w-2 h-2 rounded-full", selected.status === "safe" ? "bg-success" : "bg-warning")} />
             {selected.status === "safe" ? "Safe" : "Needs attention"} · {selected.lastSeen}
           </span>
@@ -129,11 +129,12 @@ function Dashboard() {
           <ThereTime timeZone={selected.timezone} />
         </div>
 
-        <div className="flex justify-between px-2">
+        <div className="grid grid-cols-5 gap-2">
           {actions.map(({ icon: Icon, label, run }) => (
             <button key={label} onClick={run} aria-label={`${label} ${first}`}
-              className="glass w-[52px] h-[52px] rounded-full grid place-items-center text-primary active:scale-95 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
-              <Icon size={23} weight="light" />
+              className="card-bz rounded-2xl h-[62px] flex flex-col items-center justify-center gap-1 text-foreground active:bg-muted transition-colors">
+              <Icon size={21} weight="regular" className="text-primary" />
+              <span className="text-[11px] font-medium">{label.split(" ")[0]}</span>
             </button>
           ))}
         </div>

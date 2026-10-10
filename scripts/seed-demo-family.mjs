@@ -33,7 +33,7 @@ const INVITE_CODE = "JOHNSON1";
 const ACCOUNTS = [
   { email: "mom@family.local", password: "MomTest123!", name: "Mom (Anita)", role: "parent" },
   { email: "dad@family.local", password: "DadTest123!", name: "Dad (Rajiv)", role: "parent" },
-  { email: "child@family.local", password: "ChildTest123!", name: "Priya (Daughter)", role: "family" },
+  { email: "child@family.local", password: "ChildTest123!", name: "Arjun (Son)", role: "family" },
 ];
 
 const uids = {};
@@ -97,7 +97,7 @@ async function seedFamilyData() {
       nextMedicine: { name: "Metformin", dose: "500 mg", time: "8:00 AM", food: "After breakfast" },
       nextAppointment: { doctor: "Dr. Sharma", specialty: "Cardiology", time: "4:00 PM", address: "Apollo Clinic, MG Road" },
       todayWalk: { goal: 5000, done: 4210 }, todayWater: { goal: 8, done: 5 },
-      lastFamilyMessage: { from: "Priya (Daughter)", preview: "Hi Mom, don't forget your evening walk 💙" },
+      lastFamilyMessage: { from: "Arjun (Son)", preview: "Hi Mom, don't forget your evening walk 💙" },
       wellnessScore: 88,
     });
     await setDoc(doc(db, "parents", dad), {

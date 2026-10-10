@@ -29,11 +29,11 @@ export function CheckInChip({ parentId }: { parentId: string }) {
   const { data } = useCheckIn(parentId);
   if (data === undefined) return null;
   return data ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px] font-semibold">
+    <span className="inline-flex items-center gap-1 text-primary text-[12.5px] font-medium">
       <CheckCircle2 className="w-3 h-3" /> Checked in · {data}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-warning/25 px-2 py-0.5 text-[11px] font-semibold">
+    <span className="inline-flex items-center gap-1 text-muted-foreground text-[12.5px] font-medium">
       <Clock className="w-3 h-3" /> No check-in yet today
     </span>
   );
@@ -46,7 +46,7 @@ export function ThereTime({ timeZone }: { timeZone?: string }) {
   if (tz === mine) return null;
   try {
     const t = new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit", timeZone: tz }).format(new Date());
-    return <span className="text-[11px] text-muted-foreground">{t} there</span>;
+    return <span className="text-[12.5px] text-muted-foreground">{t} there</span>;
   } catch { return null; }
 }
 

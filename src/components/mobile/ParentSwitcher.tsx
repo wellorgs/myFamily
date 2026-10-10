@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useAppState } from "@/lib/app-state";
 import { useParents } from "@/lib/queries/use-parents";
 import { useSelectedParent } from "@/lib/selected-parent";
+import { Avatar } from "@/components/mobile/KinBlocks";
 import { NotificationBell } from "@/components/mobile/NotificationBell";
 
 export type SwitchParent = { id: string; name: string; status: string; lastSeen: string; age?: number | string; device?: string };
@@ -30,9 +31,7 @@ export function FamilyTopBar({ right, everyone = false }: { right?: React.ReactN
           className="glass flex items-center gap-2 h-11 pl-1.5 pr-3 rounded-full text-[15px] font-semibold active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
           aria-label="Switch parent"
         >
-          <span className="w-8 h-8 rounded-full bg-primary/12 grid place-items-center text-[13px] font-bold text-primary">
-            {everyone ? "All" : selected ? initial(selected.name) : "+"}
-          </span>
+          {everyone || !selected ? <span className="w-8 h-8 rounded-full bg-primary/12 grid place-items-center text-[13px] font-bold text-primary">{everyone ? "All" : "+"}</span> : <Avatar name={selected.name} className="w-8 h-8 text-[13px]" />}
           {label}
           <CaretUpDown size={16} weight="light" className="text-muted-foreground" />
         </button>
@@ -53,9 +52,7 @@ export function FamilyTopBar({ right, everyone = false }: { right?: React.ReactN
                     onClick={() => { select(p.id); setOpen(false); }}
                     className="w-full flex items-center gap-3 text-left"
                   >
-                    <span className={cn("w-10 h-10 rounded-full grid place-items-center text-sm font-bold", ok ? "bg-primary/12 text-primary" : "bg-warning/25 text-foreground")}>
-                      {initial(p.name)}
-                    </span>
+                    <Avatar name={p.name} className="w-10 h-10 text-sm" />
                     <span className="flex-1 min-w-0">
                       <span className="block text-[15.5px] font-semibold truncate">{firstName(p.name)}{p.age ? ` · ${p.age}` : ""}</span>
                       <span className="block text-[12.5px] text-muted-foreground truncate">{ok ? "Safe" : "Needs attention"} · {p.lastSeen}</span>

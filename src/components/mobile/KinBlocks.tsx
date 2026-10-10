@@ -29,11 +29,25 @@ export function useVitals(parentId: string): Vital[] {
 
 /* ---------- hero ---------- */
 
+// Demo accounts only; real parents get photoUrl from their profile.
+export const demoPhoto = (n: string) => (/anita|mom/i.test(n) ? "/people/mom.jpg" : /rajiv|dad/i.test(n) ? "/people/dad.jpg" : /arjun|son|daughter|child/i.test(n) ? "/people/child.jpg" : undefined);
+
+/** Round avatar: photo when known, else initial. */
+export function Avatar({ name, className }: { name: string; className?: string }) {
+  const src = demoPhoto(name);
+  return (
+    <span className={cn("rounded-full overflow-hidden grid place-items-center bg-primary/12 text-primary font-bold shrink-0", className)}>
+      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : (name.trim()[0]?.toUpperCase() ?? "?")}
+    </span>
+  );
+}
+
 /** Person-first hero: photo (or initial) with a glass name+age pill, vitals as small tiles beside it. */
 export function PersonHero({ name, age, photoUrl, vitals, online = true, className }: {
   name: string; age?: number | string; photoUrl?: string; vitals: Vital[]; online?: boolean; className?: string;
 }) {
   const first = name.split(" ")[0];
+  photoUrl ??= demoPhoto(name);
   return (
     <section className={cn("card-bz rounded-3xl p-2.5 flex gap-2.5", className)} aria-label={`${name} summary`}>
       <div className="relative w-[46%] min-h-[196px] rounded-[14px] overflow-hidden bg-muted shrink-0">
@@ -72,12 +86,12 @@ export function RecapPill({ text, onOpen }: { text: string; onOpen: () => void }
   return (
     <button
       onClick={onOpen}
-      className="glass w-full rounded-full px-4 py-3 flex items-center gap-2 text-left min-h-[48px] active:scale-[0.99] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+      className="card-bz w-full rounded-2xl px-4 py-3 flex items-center gap-2 text-left min-h-[48px] active:scale-[0.99] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
       aria-label="Read the AI recap"
     >
       <Sparkle size={19} weight="light" className="text-primary shrink-0" />
       <span className="flex-1 text-[13px] text-primary truncate">{text}</span>
-      <span className="text-[13px] font-bold text-[oklch(0.58_0.13_70)] shrink-0">Read the recap</span>
+      <span className="text-[13px] font-bold text-primary shrink-0">Read</span>
     </button>
   );
 }
