@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Camera, CheckCircle2, Clock, AlertCircle, Loader, Keyboard } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { getMedicineOCR } from "@/lib/gemini-ai";
+import { scanMedicineLabel } from "@/lib/scan-medicine";
+import { firebaseAuth } from "@/integrations/firebase/client";
+import { useParents } from "@/lib/queries/use-parents";
+import { useSelectedParent } from "@/lib/selected-parent";
 import { useAppState } from "@/lib/app-state";
 import { useSetupStore } from "@/lib/setup-store";
 import { isMockAccount } from "@/lib/account-utils";
@@ -44,6 +47,9 @@ export function Scan() {
   const { parentId, familyId, email, role } = useAppState();
   const homeRoute = role === "parent" ? "/parent/home" : "/family/dashboard";
   const setupStore = useSetupStore(parentId);
+  const { data: parentList } = useParents(familyId);
+  const { selected } = useSelectedParent(parentList as { id: string; name: string }[] | undefined);
+  const byFamily = role !== "parent";
   const [saving, setSaving] = useState(false);
 
   const handleSendForApproval = async () => {
@@ -59,11 +65,14 @@ export function Scan() {
           frequency: medicineData.frequency,
           instructions: medicineData.instructions,
           familyId,
+          parentId: byFamily ? selected?.id : undefined,
+          parentName: byFamily ? selected?.name.split(" ")[0] : undefined,
+          autoApprove: byFamily,
         });
       }
       setupStore.markStepDone("medicine");
       setStep("sent");
-      toast.success("Sent to family for approval");
+      toast.success(byFamily ? "Medicine added" : "Sent to family for approval");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save medicine. Please try again.");
     } finally {
@@ -188,7 +197,8 @@ export function Scan() {
       setIsLoading(true);
 
       // Use DeepSeek-VL2 via gemini-ai module
-      const ocrResult = await getMedicineOCR(base64Image);
+      const idToken = (await firebaseAuth.currentUser?.getIdToken()) ?? "";
+      const ocrResult = await scanMedicineLabel({ data: { image: base64Image, idToken } });
 
       const medicineData: MedicineData = {
         medicineName: ocrResult.name || null,
@@ -295,7 +305,7 @@ export function Scan() {
             onClick={handleSendForApproval}
             disabled={saving}
           >
-            {saving ? "Sending…" : "Send to family for approval"}
+            {saving ? "Saving…" : byFamily ? "Add medicine" : "Send to family for approval"}
           </Button>
           <Button
             variant="outline"
@@ -313,12 +323,11 @@ export function Scan() {
       {step === "sent" && (
         <SoftCard className="text-center py-10 space-y-3">
           <Clock className="w-12 h-12 mx-auto text-primary" />
-          <div className="text-lg font-semibold">Waiting for approval</div>
+          <div className="text-lg font-semibold">{byFamily ? "Medicine added" : "Waiting for approval"}</div>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            {medicineData?.medicineName
-              ? `${medicineData.medicineName} has been sent to your family for approval.`
-              : "Medicine has been sent to your family for approval."}{" "}
-            You'll get reminders automatically once approved.
+            {byFamily
+              ? `${medicineData?.medicineName ?? "Medicine"} is now on ${selected?.name.split(" ")[0] ?? "their"} list. Set the dose times from Medicines.`
+              : `${medicineData?.medicineName ?? "Medicine"} was sent to your family. Anyone in the family can approve it, then reminders start.`}
           </p>
           <Button
             variant="secondary"

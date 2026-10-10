@@ -15,6 +15,11 @@ export interface ScannedMedicineInput {
   frequency?: string | null;
   instructions?: string | null;
   familyId?: string | null;
+  /** Whose medicine this is. Defaults to the signed-in user (a parent scanning their own). */
+  parentId?: string | null;
+  parentName?: string | null;
+  /** Family scans are trusted: added as active. Parent scans wait for any family member to approve. */
+  autoApprove?: boolean;
 }
 
 /**
@@ -31,18 +36,31 @@ export async function saveScannedMedicine(input: ScannedMedicineInput): Promise<
   // scanned medicine renders identically to a seeded one. `instructions` maps to
   // the "food"/how-to-take line the cards display.
   const ref = await addDoc(collection(db, FIRESTORE_COLLECTIONS.medicines), {
-    parentId: user.uid,
+    parentId: input.parentId || user.uid,
     familyId: input.familyId || null,
     name: input.name,
     dose: input.dosage ?? "",
     freq: input.frequency ?? "As directed",
     food: input.instructions ?? "",
     stock: 30,
-    verified: false,
-    status: "pending",
+    verified: !!input.autoApprove,
+    status: input.autoApprove ? "approved" : "pending",
     createdBy: user.uid,
     createdAt: serverTimestamp(),
   });
+  // Tell the family: "approve this" (parent scan) or "added" (family scan).
+  if (input.familyId) {
+    await addDoc(collection(db, FIRESTORE_COLLECTIONS.notifications), {
+      familyId: input.familyId,
+      parentId: input.parentId || user.uid,
+      tone: input.autoApprove ? "green" : "amber",
+      title: input.autoApprove
+        ? `${input.name} added for ${input.parentName ?? "your parent"}`
+        : `${input.parentName ?? "A parent"} scanned ${input.name}. Approve it?`,
+      time: "just now",
+      createdAt: serverTimestamp(),
+    });
+  }
   return ref.id;
 }
 
