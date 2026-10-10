@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Camera, CheckCircle2, Clock, AlertCircle, Loader, Keyboard } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { scanMedicineLabel } from "@/lib/scan-medicine";
+import { scanMedicineLabel, checkInteractions } from "@/lib/ai";
+import { useFamilyMedicines } from "@/lib/queries/use-family-medicines";
 import { firebaseAuth } from "@/integrations/firebase/client";
 import { useParents } from "@/lib/queries/use-parents";
 import { useSelectedParent } from "@/lib/selected-parent";
@@ -50,6 +51,8 @@ export function Scan() {
   const { data: parentList } = useParents(familyId);
   const { selected } = useSelectedParent(parentList as { id: string; name: string }[] | undefined);
   const byFamily = role !== "parent";
+  const { data: existingMeds } = useFamilyMedicines(familyId);
+  const [clash, setClash] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSendForApproval = async () => {
@@ -191,6 +194,19 @@ export function Scan() {
     }
   };
 
+  // Best-effort safety check; never blocks adding the medicine.
+  const warnIfClash = async (name: string) => {
+    setClash("");
+    try {
+      const target = byFamily ? selected?.id : parentId;
+      const current = ((existingMeds ?? []) as { name: string; parentId?: string; verified?: boolean }[])
+        .filter((m) => m.verified && (!m.parentId || m.parentId === target)).map((m) => m.name);
+      const idToken = (await firebaseAuth.currentUser?.getIdToken()) ?? "";
+      const r = await checkInteractions({ data: { idToken, newMedicine: name, current } });
+      if (r.warn) setClash(r.note);
+    } catch { /* AI unavailable: skip */ }
+  };
+
   const analyzeMedicineLabel = async (base64Image: string) => {
     try {
       console.log("Calling DeepSeek Vision API for medicine OCR...");
@@ -221,6 +237,7 @@ export function Scan() {
 
       // Store the detected medicine data for display
       sessionStorage.setItem("detectedMedicine", JSON.stringify(medicineData));
+      void warnIfClash(medicineData.medicineName);
 
       toast.success("Medicine label scanned successfully!");
       setIsLoading(false);
@@ -286,6 +303,7 @@ export function Scan() {
           {medicineData.medicineName && (
             <Field label="Name" value={medicineData.medicineName} />
           )}
+          {clash && <div role="alert" className="rounded-2xl bg-warning/25 p-3 text-sm font-medium">Check with the doctor: {clash}</div>}
           {medicineData.dosage && <Field label="Dosage" value={medicineData.dosage} />}
           {medicineData.frequency && <Field label="Frequency" value={medicineData.frequency} />}
           {medicineData.instructions && (

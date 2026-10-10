@@ -4,7 +4,8 @@ import { SoftCard } from "@/components/mobile/Card";
 import { Button } from "@/components/ui/button";
 import { Mic, Sparkles, Loader, CheckCircle2, AlertCircle, Edit2, X } from "lucide-react";
 import { useState, useRef, useMemo } from "react";
-import { callGeminiAI, type Message } from "@/lib/gemini-ai";
+import { askAssistant } from "@/lib/ai";
+import { firebaseAuth } from "@/integrations/firebase/client";
 import { toast } from "sonner";
 import { getState } from "@/lib/app-state";
 
@@ -48,16 +49,10 @@ function AI() {
     setMessages((m) => [...m, { role: "user", text: q }]);
     setLoading(true);
 
-    // Build conversation history for Gemini
-    const history: Message[] = messages
-      .filter((m) => m.role === "ai")
-      .map((m) => ({
-        role: "model" as const,
-        parts: [{ text: m.text }],
-      }));
 
     try {
-      const reply = await callGeminiAI(q, history);
+      const idToken = (await firebaseAuth.currentUser?.getIdToken()) ?? "";
+      const reply = await askAssistant({ data: { idToken, question: q, history: messages } });
       setMessages((m) => [...m, { role: "ai", text: reply }]);
     } catch (err) {
       const error = err instanceof Error ? err.message : "Failed to get response";

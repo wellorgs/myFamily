@@ -24,6 +24,7 @@ import { getStepsForRole } from "@/lib/setup-steps";
 import { isDemoAccount } from "@/lib/account-utils";
 import { CheckInCard } from "@/components/mobile/ParentHomeBlocks";
 import { Gear, HeartStraight, Phone, Pill as PillIcon, Sparkle, UsersThree } from "@phosphor-icons/react";
+import { useAiRecap } from "@/lib/use-ai";
 import { PersonHero, RecapPill, RecapSheet, TileGrid, useVitals, type Tile } from "@/components/mobile/KinBlocks";
 
 export const Route = createFileRoute("/parent/home")({
@@ -49,6 +50,7 @@ function Home() {
   const [medDismissed, setMedDismissed] = useState(false);
   const [recapOpen, setRecapOpen] = useState(false);
   const vitals = useVitals(parentId);
+  const aiSummary = useAiRecap(recapOpen, name || "this person", `Wellness ${todayCards.wellness}/100; next medicine ${todayCards.medicine.name || "none left"}; steps ${todayCards.walk.done}/${todayCards.walk.goal}; water ${todayCards.water.done}/${todayCards.water.goal}; sleep ${vitals.find((v) => v.key === "sleep")?.value ?? "unknown"}`, recapSummary(todayCards, vitals.find((v) => v.key === "sleep")?.value));
 
   useEffect(() => {
     const loadFamilyCode = async () => {
@@ -291,7 +293,7 @@ function Home() {
         open={recapOpen}
         onOpenChange={setRecapOpen}
         who={name || "you"}
-        summary={recapSummary(todayCards, vitals.find((v) => v.key === "sleep")?.value)}
+        summary={aiSummary}
         sleep={vitals.find((v) => v.key === "sleep")?.value ?? "No data yet"}
         vitalsNote={todayCards.wellness >= 80 ? "All readings look steady today" : "A few readings need a look"}
       />

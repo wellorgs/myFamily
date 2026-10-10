@@ -1,3 +1,4 @@
+import { useAiRecap } from "@/lib/use-ai";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -186,7 +187,8 @@ function RecapFor({ p, open, onOpenChange }: { p: P; open: boolean; onOpenChange
   const first = p.name.split(" ")[0];
   const ok = p.status === "safe";
   // ponytail: summary composed from live numbers; swap for a model call once the server key exists.
-  const summary = `${first}'s wellness score is ${p.wellness} out of 100. ${p.medsPending ? `${p.medsPending} medicine${p.medsPending > 1 ? "s are" : " is"} still pending. ` : "All medicines are taken. "}${first} has walked ${p.steps.toLocaleString()} steps and slept ${p.sleep}. Phone battery is at ${p.battery}%.`;
+  const fallback = `${first}'s wellness score is ${p.wellness} out of 100. ${p.medsPending ? `${p.medsPending} medicine${p.medsPending > 1 ? "s are" : " is"} still pending. ` : "All medicines are taken. "}${first} has walked ${p.steps.toLocaleString()} steps and slept ${p.sleep}. Phone battery is at ${p.battery}%.`;
+  const summary = useAiRecap(open, first, `Wellness ${p.wellness}/100; medicines pending ${p.medsPending ?? 0}; steps ${p.steps}; sleep ${p.sleep}; phone battery ${p.battery}%; status ${p.status}; last seen ${p.lastSeen}`, fallback);
   return (
     <RecapSheet
       open={open}
