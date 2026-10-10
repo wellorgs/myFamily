@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { HeartPulse, Pill, ShieldAlert } from "lucide-react";
+import { CheckCircle, MoonStars, Phone, Pill, Pulse, Sparkle, Sun } from "@phosphor-icons/react";
 import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { cn } from "@/lib/utils";
 import { markWelcomeSeen } from "@/lib/welcome";
@@ -44,7 +44,7 @@ function Welcome() {
           Skip
         </button>
 
-        <div key={i} className="border border-white/70 shadow-soft flex-1 min-h-0 rounded-[40px] overflow-hidden relative grid place-items-center bg-gradient-to-b from-[oklch(0.9_0.08_160)] to-[oklch(0.96_0.05_95)] animate-in fade-in zoom-in-95 duration-300">
+        <div key={i} className="flex-1 min-h-0 rounded-[40px] overflow-hidden relative grid place-items-center canvas-cream border border-border animate-in fade-in zoom-in-95 duration-500">
           {SLIDES[i].art}
         </div>
 
@@ -55,7 +55,7 @@ function Welcome() {
 
         <button
           onClick={() => (last ? finish() : setI(i + 1))}
-          className="mt-8 h-14 rounded-full bg-primary text-primary-foreground text-base font-semibold shadow-lift active:scale-[0.99] transition-transform"
+          className="mt-8 h-14 rounded-full bg-primary text-primary-foreground text-base font-semibold shadow-[0_10px_22px_-10px_oklch(0.58_0.13_163/0.7)] active:scale-[0.98] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
         >
           {last ? "Get started" : "Next"}
         </button>
@@ -70,48 +70,77 @@ function Welcome() {
   );
 }
 
-function Bubble({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("glass absolute rounded-3xl grid place-items-center", className)}>{children}</div>;
-}
+const Tag = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">{children}</div>
+);
 
 function FamilyArt() {
+  const vitals = [["Heart", "72", "bpm"], ["BP", "128/82", ""], ["Sleep", "7h 10", ""]];
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute inset-x-10 top-[18%] bottom-[14%] rounded-[44%] bg-white/40" />
-      <div className="absolute inset-0 grid place-items-center text-[88px] leading-none select-none" aria-hidden>
-        <span>👵🏽👨🏽‍🦳</span>
+    <div className="w-full px-6 space-y-3">
+      <div className="card-bz rounded-3xl p-4">
+        <div className="flex items-center gap-3">
+          <span className="w-12 h-12 rounded-full bg-primary/12 text-primary grid place-items-center font-display font-bold text-lg">A</span>
+          <div className="flex-1">
+            <div className="font-semibold text-[16px]">Anita · 68</div>
+            <div className="text-[12.5px] text-muted-foreground">Checked in 8:12 AM</div>
+          </div>
+          <CheckCircle size={24} weight="fill" className="text-primary" />
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          {vitals.map(([k, v, u]) => (
+            <div key={k} className="rounded-2xl bg-muted/70 p-2.5">
+              <div className="text-[10.5px] text-muted-foreground">{k}</div>
+              <div className="font-display font-bold text-[15px]">{v}<span className="text-[10px] font-medium text-muted-foreground"> {u}</span></div>
+            </div>
+          ))}
+        </div>
       </div>
-      <Bubble className="w-16 h-16 left-8 top-[14%]"><HeartPulse className="w-8 h-8 text-primary" /></Bubble>
-      <Bubble className="w-14 h-14 right-8 bottom-[22%] text-3xl">💚</Bubble>
-      <Bubble className="w-14 h-14 right-12 top-[22%] text-3xl">👩🏽</Bubble>
+      <div className="glass rounded-full h-12 px-4 flex items-center gap-2 w-fit ml-auto text-[13.5px] font-semibold">
+        <Sparkle size={18} weight="fill" className="text-primary" />Read the weekly recap
+      </div>
     </div>
   );
 }
 
 function MedicineArt() {
   return (
-    <div className="relative w-full h-full">
-      <div className="absolute inset-x-8 top-[26%] glass rounded-3xl p-5 bg-white/70">
-        <div className="text-xs font-semibold text-muted-foreground">8:00 AM · after breakfast</div>
-        <div className="text-xl font-semibold mt-1">Metformin · 500 mg</div>
-        <div className="mt-4 h-12 rounded-full bg-primary text-primary-foreground grid place-items-center font-semibold">I took it</div>
+    <div className="w-full px-6 space-y-3">
+      <div className="card-bz rounded-3xl p-4 space-y-3">
+        <Tag>Today · Metformin 500 mg</Tag>
+        {[[Sun, "8:00 AM", "After breakfast", true], [MoonStars, "9:00 PM", "After dinner", false]].map(([I, t, f, on]) => {
+          const Ic = I as typeof Sun;
+          return (
+            <div key={t as string} className="flex items-center gap-3">
+              <span className="w-10 h-10 rounded-[14px] bg-primary/12 text-primary grid place-items-center"><Ic size={21} weight="light" /></span>
+              <div className="flex-1"><div className="font-semibold text-[15px]">{t as string}</div><div className="text-[12.5px] text-muted-foreground">{f as string}</div></div>
+              {on ? <CheckCircle size={24} weight="fill" className="text-primary" /> : <span className="text-[12px] font-semibold rounded-full bg-muted px-3 py-1.5">Later</span>}
+            </div>
+          );
+        })}
       </div>
-      <Bubble className="w-16 h-16 left-8 top-[10%]"><Pill className="w-8 h-8 text-primary" /></Bubble>
-      <Bubble className="px-4 h-12 right-8 bottom-[16%] text-sm font-semibold">Priya got notified ✓</Bubble>
+      <div className="glass rounded-full h-12 px-4 flex items-center gap-2 w-fit text-[13.5px] font-semibold"><Pill size={18} weight="light" className="text-primary" />Priya was told: taken</div>
     </div>
   );
 }
 
 function SosArt() {
   return (
-    <div className="relative w-full h-full grid place-items-center">
-      <div className="absolute w-64 h-64 rounded-full bg-destructive/10" />
-      <div className="absolute w-44 h-44 rounded-full bg-destructive/15" />
-      <div className="relative w-28 h-28 rounded-full bg-destructive text-destructive-foreground grid place-items-center shadow-lift ring-8 ring-white/50">
-        <ShieldAlert className="w-12 h-12" />
+    <div className="w-full px-6 space-y-3">
+      <div className="card-bz rounded-3xl p-5 text-center">
+        <span className="mx-auto w-20 h-20 rounded-full bg-destructive text-destructive-foreground grid place-items-center ring-8 ring-destructive/10"><Pulse size={34} weight="light" /></span>
+        <div className="font-display font-bold text-[18px] mt-3">SOS sent</div>
+        <div className="text-[13px] text-muted-foreground">Location shared with your circle</div>
       </div>
-      <Bubble className="px-4 h-12 left-6 bottom-[16%] text-sm font-semibold">Calling Priya…</Bubble>
-      <Bubble className="px-4 h-12 right-6 top-[16%] text-sm font-semibold">Location shared</Bubble>
+      <div className="card-bz rounded-3xl p-4 divide-y divide-border">
+        {[["Priya", "Calling…"], ["Rahul", "Next in line"]].map(([n, s]) => (
+          <div key={n} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
+            <span className="w-9 h-9 rounded-full bg-primary/12 text-primary grid place-items-center font-bold text-sm">{n[0]}</span>
+            <div className="flex-1 font-semibold text-[15px]">{n}</div>
+            <span className="text-[12.5px] text-muted-foreground flex items-center gap-1">{s === "Calling…" && <Phone size={14} weight="fill" className="text-primary" />}{s}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
