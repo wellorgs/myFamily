@@ -4,6 +4,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 export function Screen({
+  topbar,
   title,
   subtitle,
   back,
@@ -13,6 +14,7 @@ export function Screen({
   padded = true,
   scroll = true,
 }: {
+  topbar?: ReactNode;
   title?: string;
   subtitle?: string;
   back?: boolean | string;
@@ -24,7 +26,8 @@ export function Screen({
 }) {
   const router = useRouter();
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background">
+    <div className="flex-1 flex flex-col min-h-0">
+      {topbar}
       {(title || back || right) && (
         <div className="px-5 pt-4 pb-3 flex items-center gap-3">
           {back ? (
@@ -47,13 +50,13 @@ export function Screen({
             )
           ) : null}
           <div className="flex-1 min-w-0">
-            {title && <h1 className="text-[28px] font-bold leading-tight truncate">{title}</h1>}
+            {title && <h1 className="text-[30px] font-bold leading-tight tracking-tight truncate">{title}</h1>}
             {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
           {right}
         </div>
       )}
-      <div className={cn("flex-1 min-h-0", scroll && "overflow-y-auto no-scrollbar", padded && "px-5 pb-nav")}>
+      <div className={cn("flex-1 min-h-0", scroll && "overflow-y-auto no-scrollbar", padded && "px-5 pb-nav pt-2")}>
         {children}
       </div>
       {footer && <div className="px-5 pb-6 pt-3 border-t bg-background/80 backdrop-blur">{footer}</div>}

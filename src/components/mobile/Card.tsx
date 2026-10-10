@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+// Cards are a white core inside a faint tray ring (card-bz). Tones tint the core.
 const toneMap: Record<string, string> = {
-  blue: "bg-tint-blue",
-  green: "bg-tint-green",
-  amber: "bg-tint-amber",
-  red: "bg-tint-red",
-  purple: "bg-tint-purple",
-  neutral: "bg-card",
+  blue: "card-bz bg-tint-blue",
+  green: "card-bz bg-tint-green",
+  amber: "card-bz bg-tint-amber",
+  red: "card-bz bg-tint-red",
+  purple: "card-bz bg-tint-purple",
+  neutral: "card-bz",
 };
 
 export function SoftCard({
@@ -20,13 +21,7 @@ export function SoftCard({
   children: ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-3xl p-5 shadow-soft border border-black/[0.04] dark:border-white/[0.06]",
-        toneMap[tone] ?? toneMap.neutral,
-        className,
-      )}
-    >
+    <div className={cn("rounded-3xl p-4", toneMap[tone] ?? toneMap.neutral, className)}>
       {children}
     </div>
   );

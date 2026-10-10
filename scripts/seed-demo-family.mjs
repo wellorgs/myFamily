@@ -92,7 +92,7 @@ async function seedFamilyData() {
     // parents/{uid}: carries BOTH the child-dashboard fields and the
     // parent-home today-cards fields, keyed by the parent's uid.
     await setDoc(doc(db, "parents", mom), {
-      familyId: FAMILY_ID, name: "Mom (Anita)", status: "safe", lastSeen: "Just now",
+      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 68, device: "iPhone", name: "Mom (Anita)", status: "safe", lastSeen: "Just now",
       wellness: 88, medsPending: 0, steps: 4210, sleep: "7h 20m", battery: 78,
       nextMedicine: { name: "Metformin", dose: "500 mg", time: "8:00 AM", food: "After breakfast" },
       nextAppointment: { doctor: "Dr. Sharma", specialty: "Cardiology", time: "4:00 PM", address: "Apollo Clinic, MG Road" },
@@ -101,7 +101,7 @@ async function seedFamilyData() {
       wellnessScore: 88,
     });
     await setDoc(doc(db, "parents", dad), {
-      familyId: FAMILY_ID, name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago",
+      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 71, device: "Android", name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago",
       wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42,
       nextMedicine: { name: "Atorvastatin", dose: "10 mg", time: "9:00 PM", food: "After dinner" },
       nextAppointment: { doctor: "Dr. Rao", specialty: "General", time: "11:00 AM", address: "City Clinic" },
@@ -110,11 +110,15 @@ async function seedFamilyData() {
       wellnessScore: 74,
     });
 
+    // vitals (doc id = parentId; read by the parent hero card + health page)
+    await setDoc(doc(db, "vitals", mom), { parentId: mom, bloodPressure: "122/80", heartRate: "72", sleep: "7h 20m", sugarFasting: "104", weight: "62", hydration: "5 / 8", steps: "4,210" });
+    await setDoc(doc(db, "vitals", dad), { parentId: dad, bloodPressure: "134/86", heartRate: "78", sleep: "6h 05m", sugarFasting: "118", weight: "74", hydration: "3 / 8", steps: "1,820" });
+
     // medicines (queried by parentId)
     const meds = [
-      { parentId: mom, name: "Metformin", dose: "500 mg", freq: "2x daily", food: "After food", stock: 18, verified: true, status: "approved" },
-      { parentId: mom, name: "Amlodipine", dose: "5 mg", freq: "1x morning", food: "After breakfast", stock: 6, verified: true, status: "approved" },
-      { parentId: dad, name: "Atorvastatin", dose: "10 mg", freq: "1x night", food: "After dinner", stock: 24, verified: false, status: "pending" },
+      { parentId: mom, name: "Metformin", dose: "500 mg", freq: "2x daily", food: "After food", stock: 18, verified: true, status: "approved", slots: [{ time: "08:00", food: "after" }, { time: "21:00", food: "after" }], days: [0,1,2,3,4,5,6], refillAtDays: 7 },
+      { parentId: mom, name: "Amlodipine", dose: "5 mg", freq: "1x morning", food: "After breakfast", stock: 6, verified: true, status: "approved", slots: [{ time: "08:00", food: "after" }], days: [0,1,2,3,4,5,6], refillAtDays: 7 },
+      { parentId: dad, name: "Atorvastatin", dose: "10 mg", freq: "1x night", food: "After dinner", stock: 24, verified: false, status: "pending", slots: [{ time: "21:00", food: "after" }], days: [0,1,2,3,4,5,6], refillAtDays: 7 },
     ];
     for (const m of meds) {
       // Deterministic id so re-running the seed overwrites instead of duplicating.

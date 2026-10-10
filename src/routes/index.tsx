@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useHydrated } from "@/lib/app-state";
 import { getNextAuthRoute } from "@/lib/redirect-utils";
+import { hasSeenWelcome } from "@/lib/welcome";
+import { getState } from "@/lib/app-state";
 import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { Heart } from "lucide-react";
 
@@ -23,8 +25,12 @@ function Splash() {
   useEffect(() => {
     if (!hydrated) return;
     const t = setTimeout(() => {
-      const nextRoute = getNextAuthRoute();
-      navigate({ to: nextRoute });
+      // First-time, signed-out visitors get the 3-slide intro before auth.
+      if (!getState().authed && !hasSeenWelcome()) {
+        navigate({ to: "/welcome" });
+        return;
+      }
+      navigate({ to: getNextAuthRoute() });
     }, 700);
     return () => clearTimeout(t);
   }, [hydrated, navigate]);
@@ -32,7 +38,7 @@ function Splash() {
   return (
     <PhoneFrame>
       <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center px-8">
-        <div className="w-24 h-24 rounded-[32px] bg-primary/10 flex items-center justify-center">
+        <div className="glass w-24 h-24 rounded-[32px] flex items-center justify-center">
           <Heart className="w-12 h-12 text-primary" strokeWidth={2.2} />
         </div>
         <div>

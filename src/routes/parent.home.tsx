@@ -22,6 +22,9 @@ import { ParentEmptyHome } from "@/components/mobile/ParentEmptyHome";
 import { useSetupStore } from "@/lib/setup-store";
 import { getStepsForRole } from "@/lib/setup-steps";
 import { isDemoAccount } from "@/lib/account-utils";
+import { CheckInCard } from "@/components/mobile/ParentHomeBlocks";
+import { Gear, HeartStraight, Phone, Pill as PillIcon, Sparkle, UsersThree } from "@phosphor-icons/react";
+import { PersonHero, RecapPill, RecapSheet, TileGrid, useVitals, type Tile } from "@/components/mobile/KinBlocks";
 
 export const Route = createFileRoute("/parent/home")({
   head: () => ({ meta: [{ title: "Home — myFamily" }] }),
@@ -30,7 +33,7 @@ export const Route = createFileRoute("/parent/home")({
 
 function Home() {
   const navigate = useNavigate();
-  const { name, parentId, role, email } = useAppState();
+  const { name, parentId, role, email, familyId } = useAppState();
   const t = useT();
   const canAccess = useDashboardGuard();
   const setupStore = useSetupStore(parentId);
@@ -44,6 +47,8 @@ function Home() {
   const [copied, setCopied] = useState(false);
   // Dismisses today's medicine prompt after the user acts on it (took it / snooze).
   const [medDismissed, setMedDismissed] = useState(false);
+  const [recapOpen, setRecapOpen] = useState(false);
+  const vitals = useVitals(parentId);
 
   useEffect(() => {
     const loadFamilyCode = async () => {
@@ -109,11 +114,27 @@ function Home() {
       title={`${greeting},`}
       subtitle={name}
       right={
-        <NotificationBell />
-
+        <div className="flex items-center gap-2">
+          <Link
+            to="/sos"
+            className="h-11 px-4 rounded-full bg-destructive text-destructive-foreground shadow-lift flex items-center gap-1.5 text-sm font-bold"
+            aria-label="Emergency SOS"
+          >
+            <ShieldAlert className="w-4 h-4" /> SOS
+          </Link>
+          <NotificationBell />
+        </div>
       }
     >
       <div className="space-y-4">
+        <PersonHero name={name || "You"} vitals={vitals} />
+        <RecapPill
+          text={recapLine(todayCards, name)}
+          onOpen={() => setRecapOpen(true)}
+        />
+        <CheckInCard parentId={parentId} familyId={familyId} email={email} />
+        <TileGrid tiles={TILES} />
+
         {familyCode && (
           <SoftCard className="bg-primary/5 border border-primary/20">
             <div className="flex items-start gap-4">
@@ -233,20 +254,6 @@ function Home() {
           </SoftCard>
         ) : null}
 
-        {todayCards.wellness > 0 && (
-          <SoftCard>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Wellness score</div>
-                <div className="text-3xl font-bold mt-1">{todayCards.wellness}<span className="text-lg text-muted-foreground">/100</span></div>
-              </div>
-              <div className="w-20 h-20 rounded-full grid place-items-center" style={{ background: `conic-gradient(var(--success) ${todayCards.wellness * 3.6}deg, var(--muted) 0)` }}>
-                <div className="w-16 h-16 rounded-full bg-card grid place-items-center text-sm font-semibold">Good</div>
-              </div>
-            </div>
-          </SoftCard>
-        )}
-
         <FamilyFeed />
 
         <ActivityStrip />
@@ -269,14 +276,6 @@ function Home() {
           </div>
         )}
 
-        <Link
-          to="/sos"
-          className="fixed bottom-24 right-4 sm:right-[calc(50%-215px+16px)] w-16 h-16 rounded-full bg-destructive text-destructive-foreground shadow-lift grid place-items-center animate-pulse-slow"
-          aria-label="Emergency SOS"
-        >
-          <ShieldAlert className="w-7 h-7" />
-          <span className="sr-only">SOS</span>
-        </Link>
       </div>
 
       {dialogKind && (
@@ -288,6 +287,14 @@ function Home() {
           emoji="👩🏽"
         />
       )}
+      <RecapSheet
+        open={recapOpen}
+        onOpenChange={setRecapOpen}
+        who={name || "you"}
+        summary={recapSummary(todayCards, vitals.find((v) => v.key === "sleep")?.value)}
+        sleep={vitals.find((v) => v.key === "sleep")?.value ?? "No data yet"}
+        vitalsNote={todayCards.wellness >= 80 ? "All readings look steady today" : "A few readings need a look"}
+      />
       <MediaViewerDialog open={mediaOpen} onOpenChange={setMediaOpen} item={mediaItem} />
     </Screen>
   );
@@ -302,4 +309,27 @@ function getGreeting(t: (k: import("@/lib/i18n").TKey) => string) {
   if (h < 12) return t("g.morning");
   if (h < 17) return t("g.afternoon");
   return t("g.evening");
+}
+
+const TILES: Tile[] = [
+  { to: "/parent/medicine/scan", label: "Medicine", icon: PillIcon },
+  { to: "/parent/health", label: "Health", icon: HeartStraight },
+  { to: "/parent/family", label: "Family", icon: UsersThree },
+  { to: "/calls", label: "Calls", icon: Phone },
+  { to: "/parent/ai", label: "Ask AI", icon: Sparkle },
+  { to: "/parent/profile", label: "Settings", icon: Gear },
+];
+
+function recapLine(c: { wellness: number; medicine: { name: string } }, name: string) {
+  const first = (name || "there").split(" ")[0];
+  return c.wellness > 0 ? `Good day, ${first}! Here's how today looks…` : "Add a medicine and a walk to see your day…";
+}
+
+function recapSummary(
+  c: { wellness: number; medicine: { name: string; time: string }; walk: { done: number; goal: number }; water: { done: number; goal: number } },
+  sleep?: string,
+) {
+  if (c.wellness <= 0) return "There isn't enough data yet. Once medicines, walks and readings are logged, a daily summary shows up here.";
+  const med = c.medicine.name ? `Your next medicine is ${c.medicine.name} at ${c.medicine.time}.` : "All of today's medicines are taken.";
+  return `Your wellness score is ${c.wellness} out of 100. ${med} You've walked ${c.walk.done.toLocaleString()} of ${c.walk.goal.toLocaleString()} steps and had ${c.water.done} of ${c.water.goal} glasses of water${sleep && sleep !== "—" ? `, after sleeping ${sleep}` : ""}.`;
 }

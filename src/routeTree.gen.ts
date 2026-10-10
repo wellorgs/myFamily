@@ -20,6 +20,8 @@ import { Route as ParentRouteImport } from './routes/parent'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SosRouteImport } from './routes/sos'
+import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as FamilyCircleRouteImport } from './routes/family.circle'
 import { Route as FamilyDashboardRouteImport } from './routes/family.dashboard'
 import { Route as FamilyInsightsRouteImport } from './routes/family.insights'
 import { Route as FamilyMedicinesRouteImport } from './routes/family.medicines'
@@ -92,6 +94,16 @@ const SosRoute = SosRouteImport.update({
   id: '/sos',
   path: '/sos',
   getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyCircleRoute = FamilyCircleRouteImport.update({
+  id: '/circle',
+  path: '/circle',
+  getParentRoute: () => FamilyRoute,
 } as any)
 const FamilyDashboardRoute = FamilyDashboardRouteImport.update({
   id: '/dashboard',
@@ -191,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sos': typeof SosRoute
+  '/welcome': typeof WelcomeRoute
+  '/family/circle': typeof FamilyCircleRoute
   '/family/dashboard': typeof FamilyDashboardRoute
   '/family/insights': typeof FamilyInsightsRoute
   '/family/medicines': typeof FamilyMedicinesRoute
@@ -221,6 +235,8 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sos': typeof SosRoute
+  '/welcome': typeof WelcomeRoute
+  '/family/circle': typeof FamilyCircleRoute
   '/family/dashboard': typeof FamilyDashboardRoute
   '/family/insights': typeof FamilyInsightsRoute
   '/family/medicines': typeof FamilyMedicinesRoute
@@ -252,6 +268,8 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sos': typeof SosRoute
+  '/welcome': typeof WelcomeRoute
+  '/family/circle': typeof FamilyCircleRoute
   '/family/dashboard': typeof FamilyDashboardRoute
   '/family/insights': typeof FamilyInsightsRoute
   '/family/medicines': typeof FamilyMedicinesRoute
@@ -284,6 +302,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/sos'
+    | '/welcome'
+    | '/family/circle'
     | '/family/dashboard'
     | '/family/insights'
     | '/family/medicines'
@@ -314,6 +334,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/sos'
+    | '/welcome'
+    | '/family/circle'
     | '/family/dashboard'
     | '/family/insights'
     | '/family/medicines'
@@ -344,6 +366,8 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/sos'
+    | '/welcome'
+    | '/family/circle'
     | '/family/dashboard'
     | '/family/insights'
     | '/family/medicines'
@@ -375,6 +399,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SosRoute: typeof SosRoute
+  WelcomeRoute: typeof WelcomeRoute
   SetupCompleteRoute: typeof SetupCompleteRoute
 }
 
@@ -456,6 +481,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sos'
       preLoaderRoute: typeof SosRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family/circle': {
+      id: '/family/circle'
+      path: '/circle'
+      fullPath: '/family/circle'
+      preLoaderRoute: typeof FamilyCircleRouteImport
+      parentRoute: typeof FamilyRoute
     }
     '/family/dashboard': {
       id: '/family/dashboard'
@@ -592,6 +631,7 @@ const FamilyParentsRouteWithChildren = FamilyParentsRoute._addFileChildren(
 )
 
 interface FamilyRouteChildren {
+  FamilyCircleRoute: typeof FamilyCircleRoute
   FamilyDashboardRoute: typeof FamilyDashboardRoute
   FamilyInsightsRoute: typeof FamilyInsightsRoute
   FamilyMedicinesRoute: typeof FamilyMedicinesRoute
@@ -602,6 +642,7 @@ interface FamilyRouteChildren {
 }
 
 const FamilyRouteChildren: FamilyRouteChildren = {
+  FamilyCircleRoute: FamilyCircleRoute,
   FamilyDashboardRoute: FamilyDashboardRoute,
   FamilyInsightsRoute: FamilyInsightsRoute,
   FamilyMedicinesRoute: FamilyMedicinesRoute,
@@ -661,6 +702,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SosRoute: SosRoute,
+  WelcomeRoute: WelcomeRoute,
   SetupCompleteRoute: SetupCompleteRoute,
 }
 export const routeTree = rootRouteImport

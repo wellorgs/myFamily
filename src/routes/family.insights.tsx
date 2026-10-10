@@ -54,7 +54,7 @@ function Insights() {
             <BarChart data={weeklyChart}>
               <XAxis dataKey="d" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
               <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid var(--border)" }} />
-              <Bar dataKey="adh" fill="var(--primary)" radius={[8, 8, 8, 8]} />
+              <Bar dataKey="adh" fill="var(--primary)" radius={[8, 8, 8, 8]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>

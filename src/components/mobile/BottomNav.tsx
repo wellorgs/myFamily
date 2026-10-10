@@ -1,64 +1,62 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Heart, Sparkles, Users, User, LayoutDashboard, Pill, LineChart } from "lucide-react";
+import {
+  Bell, ChartLineUp, Heartbeat, House, Pill, Sparkle, UserCircle, Users, UsersThree, type Icon,
+} from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
-import { useT, type TKey } from "@/lib/i18n";
+import { useUnreadCount } from "@/lib/notifications-store";
 
-type Item = { to: string; labelKey: TKey; icon: LucideIcon };
+type Item = { to: string; label: string; icon: Icon; badge?: boolean; also?: string[] };
 
+// Standard, familiar tabs. Parent: Home, Health, Ask AI, Family, Me. Family: Home, Medicines, Alerts, Circle, Me.
 const parentItems: Item[] = [
-  { to: "/parent/home", labelKey: "nav.home", icon: Home },
-  { to: "/parent/health", labelKey: "nav.health", icon: Heart },
-  { to: "/parent/ai", labelKey: "nav.ai", icon: Sparkles },
-  { to: "/parent/family", labelKey: "nav.family", icon: Users },
-  { to: "/parent/profile", labelKey: "nav.profile", icon: User },
+  { to: "/parent/home", label: "Home", icon: House },
+  { to: "/parent/health", label: "Health", icon: Heartbeat },
+  { to: "/parent/ai", label: "Ask AI", icon: Sparkle },
+  { to: "/parent/family", label: "Family", icon: Users },
+  { to: "/parent/profile", label: "Me", icon: UserCircle },
 ];
 
 const familyItems: Item[] = [
-  { to: "/family/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/family/parents", labelKey: "nav.parents", icon: Users },
-  { to: "/family/medicines", labelKey: "nav.medicines", icon: Pill },
-  { to: "/family/insights", labelKey: "nav.insights", icon: LineChart },
-  { to: "/family/profile", labelKey: "nav.profile", icon: User },
+  { to: "/family/dashboard", label: "Home", icon: House, also: ["/family/parents", "/family/insights", "/family/appointments"] },
+  { to: "/family/medicines", label: "Medicines", icon: Pill, also: ["/family/medicine"] },
+  { to: "/notifications", label: "Alerts", icon: Bell, badge: true },
+  { to: "/family/circle", label: "Circle", icon: UsersThree },
+  { to: "/family/profile", label: "Me", icon: UserCircle },
 ];
 
 export function BottomNav({ role }: { role: "parent" | "family" }) {
   const items = role === "parent" ? parentItems : familyItems;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const t = useT();
+  const unread = useUnreadCount();
 
   return (
     <nav
       className="absolute inset-x-0 bottom-0 z-30 px-4 pt-2 safe-bottom safe-x pointer-events-none"
       aria-label="Main navigation"
     >
-      <ul className="flex items-stretch justify-between gap-1 rounded-[28px] border border-black/5 dark:border-white/10 bg-background/85 backdrop-blur-xl shadow-lift px-2 py-1.5 pointer-events-auto">
+      <ul className="glass flex items-stretch justify-between gap-1 rounded-[34px] p-1.5 pointer-events-auto">
         {items.map((it) => {
-          const active = pathname === it.to || pathname.startsWith(it.to + "/");
+          const active = [it.to, ...(it.also ?? [])].some((p) => pathname === p || pathname.startsWith(p + "/"));
           const Icon = it.icon;
           return (
             <li key={it.to} className="flex-1">
               <Link
                 to={it.to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-colors min-h-[52px]",
-                  "focus-visible:ring-2 focus-visible:ring-primary",
+                  "relative flex flex-col items-center justify-center gap-0.5 h-[56px] rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
                   active
-                    ? "text-primary bg-primary/10 font-semibold"
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "text-primary bg-white/85 shadow-[0_3px_12px_-3px_oklch(0.3_0.06_165/0.3),inset_0_1px_0_#fff] font-semibold"
+                    : "text-muted-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon className={cn(
-                  "w-[22px] h-[22px] transition-all",
-                  active && "stroke-[2.4]"
-                )} />
-                <span className={cn(
-                  "text-[11px] font-medium transition-all",
-                  active && "font-semibold"
-                )}>
-                  {t(it.labelKey)}
-                </span>
+                <Icon size={24} weight={active ? "regular" : "light"} />
+                <span className="text-[10px] font-semibold">{it.label}</span>
+                {it.badge && unread > 0 && (
+                  <span className="absolute top-1 left-[54%] min-w-[17px] h-[17px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center ring-2 ring-white">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
               </Link>
             </li>
           );

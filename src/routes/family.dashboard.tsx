@@ -1,177 +1,199 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import {
+  BellRinging, CalendarBlank, ChartLineUp, Clock, MapPin, ChatCircle, Phone, VideoCamera, Heartbeat, type Icon,
+} from "@phosphor-icons/react";
+import { toast } from "sonner";
 import { Screen } from "@/components/mobile/Screen";
-import { SoftCard, StatusDot } from "@/components/mobile/Card";
-import { useAppState } from "@/lib/app-state";
-import { useParents } from "@/lib/queries/use-parents";
-import { useAlerts } from "@/lib/queries/use-alerts";
-import { Bell, BatteryFull, Footprints, Pill, Moon, Calendar, HeartPulse, Phone, MessageSquare, ShieldAlert, Video, PhoneIncoming, PhoneCall } from "lucide-react";
-import { NotificationBell } from "@/components/mobile/NotificationBell";
-import { useState } from "react";
+import { FamilyTopBar } from "@/components/mobile/ParentSwitcher";
+import { PersonHero, RecapPill, RecapSheet, TileGrid, useVitals, type Tile } from "@/components/mobile/KinBlocks";
+import { CheckInChip, ThereTime } from "@/components/mobile/FamilyBlocks";
 import { ActionDialog, type ActionKind } from "@/components/mobile/ActionDialog";
 import { MediaViewerDialog, type MediaItem } from "@/components/mobile/MediaViewerDialog";
 import { CallDialog, type CallContact } from "@/components/mobile/CallDialog";
-import { Button } from "@/components/ui/button";
-import { ActivityStrip } from "@/components/mobile/ActivityStrip";
+import { useAppState } from "@/lib/app-state";
+import { useParents } from "@/lib/queries/use-parents";
+import { useSelectedParent } from "@/lib/selected-parent";
 import { useDashboardGuard } from "@/lib/route-guards";
+import { nudgeCooldown, sendNudge } from "@/lib/nudge";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/family/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — myFamily" }] }),
+  head: () => ({ meta: [{ title: "Home — myFamily" }] }),
   component: Dashboard,
 });
 
+type P = {
+  id: string; name: string; status: string; lastSeen: string; wellness: number; medsPending: number;
+  steps: number; sleep: string; battery: number; timezone?: string; age?: number | string; device?: string;
+  photoUrl?: string; nextMedicine?: { name?: string; dose?: string; time?: string }; nextAppointment?: { doctor?: string; specialty?: string; time?: string };
+};
+
+const TILES: Tile[] = [
+  { to: "/family/appointments/new", label: "Visits", icon: CalendarBlank },
+  { to: "/family/insights", label: "Insights", icon: ChartLineUp },
+  { to: "/family/parents", label: "Health", icon: Heartbeat },
+];
+
 function Dashboard() {
-  const { familyId } = useAppState();
+  const { familyId, name: myName, email } = useAppState();
   const canAccess = useDashboardGuard();
-  const { data: parents } = useParents(familyId);
-  const { data: alerts } = useAlerts(familyId);
-  const [dialog, setDialog] = useState<{ kind: ActionKind; name: string; emoji: string } | null>(null);
+  const { data } = useParents(familyId);
+  const parents = (data ?? []) as P[];
+  const { selected, select } = useSelectedParent(parents);
+
+  const [dialog, setDialog] = useState<{ kind: ActionKind; name: string } | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
   const [callOpen, setCallOpen] = useState(false);
-  const [callContact, setCallContact] = useState<CallContact | null>(null);
-  const [callDir, setCallDir] = useState<"incoming" | "outgoing">("outgoing");
   const [callMode, setCallMode] = useState<"audio" | "video">("audio");
+  const [recapOpen, setRecapOpen] = useState(false);
 
-  if (!canAccess || !parents || !alerts) return null;
+  // Keep the swipe carousel and the top-left switcher in sync.
+  const car = useRef<HTMLDivElement>(null);
+  const idx = Math.max(0, parents.findIndex((p) => p.id === selected?.id));
+  useEffect(() => {
+    const el = car.current;
+    if (!el || !el.children[idx]) return;
+    const target = idx * ((el.children[0] as HTMLElement).offsetWidth + 14);
+    if (Math.abs(el.scrollLeft - target) > 8) el.scrollTo({ left: target, behavior: "smooth" });
+  }, [idx, parents.length]);
+  const onScroll = () => {
+    const el = car.current;
+    if (!el || parents.length < 2) return;
+    const w = (el.children[0] as HTMLElement).offsetWidth + 14;
+    const i = Math.min(parents.length - 1, Math.max(0, Math.round(el.scrollLeft / w)));
+    if (parents[i].id !== selected?.id) select(parents[i].id);
+  };
 
-  const openCall = (id: string, mode: "audio" | "video" = "audio", direction: "incoming" | "outgoing" = "outgoing") => {
-    const p = parents.find((x) => x.id === id)!;
-    setCallContact({ name: p.name, emoji: /mom|anita|mother|mum/i.test(id) ? "👵🏽" : "👴🏽", relation: id === "mom" ? "Mom" : "Dad" });
-    setCallDir(direction);
-    setCallMode(mode);
-    setCallOpen(true);
+  if (!canAccess) return null;
+  if (!data) return <Screen topbar={<FamilyTopBar />} title="Home" subtitle="Loading…"><div /></Screen>;
+
+  if (!selected) {
+    return (
+      <Screen topbar={<FamilyTopBar />} title="Home" subtitle="Link a parent to see their day">
+        <div className="card-bz rounded-3xl p-5 mt-2 text-center">
+          <p className="text-muted-foreground text-sm">No parents are linked to your family yet.</p>
+        </div>
+      </Screen>
+    );
+  }
+
+  const first = selected.name.split(" ")[0];
+  const contact: CallContact = { name: selected.name, emoji: "", relation: "Parent" };
+
+  const nudge = async () => {
+    const wait = nudgeCooldown(selected.id);
+    if (wait) { toast(`Already nudged. Try again in ${Math.ceil(wait / 60)} min`); return; }
+    try {
+      await sendNudge({ familyId, parentId: selected.id, fromName: myName, email });
+      toast.success(`Nudge sent to ${first}`);
+    } catch { toast.error("Couldn't send the nudge. Try again."); }
   };
-  const openAction = (kind: ActionKind, id: string) => {
-    const p = parents.find((x) => x.id === id)!;
-    setDialog({ kind, name: p.name, emoji: /mom|anita|mother|mum/i.test(id) ? "👵🏽" : "👴🏽" });
-    setDialogOpen(true);
-  };
-  const openAlert = (a: (typeof alerts)[number]) => {
-    setMediaItem({
-      kind: "text",
-      from: a.title,
-      emoji: a.tone === "amber" ? "⚠️" : a.tone === "blue" ? "🔔" : "✅",
-      time: a.time,
-      body: a.title.includes("battery")
-        ? "Dad's phone is at 42% and dropping. Consider a gentle reminder to plug it in."
-        : a.title.includes("missed")
-        ? "Atorvastatin 10 mg scheduled for 9:00 PM. Two reminders sent. Tap Call to check in."
-        : "Great work! Mom's evening loop covered 3,200 steps at a steady pace.",
-    });
-    setMediaOpen(true);
-  };
+
+  const actions: { icon: Icon; label: string; run: () => void }[] = [
+    { icon: Phone, label: "Call", run: () => { setCallMode("audio"); setCallOpen(true); } },
+    { icon: VideoCamera, label: "Video call", run: () => { setCallMode("video"); setCallOpen(true); } },
+    { icon: BellRinging, label: "Nudge to call", run: nudge },
+    { icon: ChatCircle, label: "Message", run: () => { setDialog({ kind: "text", name: selected.name }); setDialogOpen(true); } },
+    { icon: MapPin, label: "Locate", run: () => {
+      setMediaItem({ kind: "photo", from: selected.name, emoji: "📍", time: selected.lastSeen, caption: "Live location · Home", gradient: "from-emerald-200 via-teal-200 to-sky-200", scene: "🗺️📍" });
+      setMediaOpen(true);
+    } },
+  ];
+
+  const med = selected.nextMedicine;
+  const appt = selected.nextAppointment;
 
   return (
-    <Screen
-      title="Dashboard"
-      subtitle="Everyone at a glance"
-      right={
-        <NotificationBell />
-
-      }
-    >
-      <div className="space-y-3">
-        {parents.map((p) => (
-          <SoftCard key={p.id} tone={p.status === "safe" ? "green" : "amber"}>
-            <Link to="/family/parents/$id" params={{ id: p.id }} className="block">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-2xl bg-card grid place-items-center text-2xl">{/mom|anita|mother|mum/i.test(p.id) ? "👵🏽" : "👴🏽"}</div>
-                <div className="flex-1">
-                  <div className="font-semibold text-lg">{p.name}</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <StatusDot tone={p.status === "safe" ? "green" : "amber"} />
-                    {p.status === "safe" ? "Safe" : "Needs attention"} · {p.lastSeen}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">{p.wellness}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Wellness</div>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-2 mt-4">
-                <Mini icon={<Pill className="w-4 h-4" />} label={p.medsPending ? `${p.medsPending} pending` : "All taken"} />
-                <Mini icon={<Footprints className="w-4 h-4" />} label={`${p.steps.toLocaleString()}`} />
-                <Mini icon={<Moon className="w-4 h-4" />} label={p.sleep} />
-                <Mini icon={<BatteryFull className="w-4 h-4" />} label={`${p.battery}%`} />
-              </div>
-            </Link>
-            <div className="grid grid-cols-4 gap-2 mt-3">
-              <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => openCall(p.id, "audio")} aria-label={`Call ${p.name}`}><Phone className="w-4 h-4" /></Button>
-              <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => openCall(p.id, "video")} aria-label={`Video call ${p.name}`}><Video className="w-4 h-4" /></Button>
-              <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => openAction("text", p.id)} aria-label={`Message ${p.name}`}><MessageSquare className="w-4 h-4" /></Button>
-              <Button variant="secondary" className="h-10 rounded-2xl px-0" onClick={() => {
-                setMediaItem({ kind: "photo", from: p.name, emoji: /mom|anita|mother|mum/i.test(p.id) ? "👵🏽" : "👴🏽", time: p.lastSeen, caption: "Live location · Home", gradient: "from-emerald-200 via-teal-200 to-sky-200", scene: "🗺️📍" });
-                setMediaOpen(true);
-              }} aria-label={`Locate ${p.name}`}><ShieldAlert className="w-4 h-4" /></Button>
-            </div>
-          </SoftCard>
-        ))}
-
-        <h2 className="text-lg font-semibold mt-4 mb-1 px-1">Alerts</h2>
-        <SoftCard className="p-2">
-          <ul className="divide-y">
-            {alerts.map((a) => (
-              <li key={a.id}>
-                <button
-                  onClick={() => openAlert(a)}
-                  className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-muted/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <StatusDot tone={a.tone as any} />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{a.title}</div>
-                    <div className="text-xs text-muted-foreground">{a.time}</div>
-                  </div>
-                </button>
-              </li>
+    <Screen topbar={<FamilyTopBar />} title="Home" subtitle={`${first}'s day at a glance`}>
+      <div className="space-y-4">
+        <div ref={car} onScroll={onScroll} className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-5 px-5 py-2" aria-label="Parents">
+          {parents.map((p) => <ParentSlide key={p.id} p={p} />)}
+        </div>
+        {parents.length > 1 && (
+          <div className="flex justify-center gap-1.5 -mt-1" aria-hidden>
+            {parents.map((p, i) => (
+              <span key={p.id} className={cn("h-1.5 rounded-full transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]", i === idx ? "w-5 bg-primary" : "w-1.5 bg-foreground/15")} />
             ))}
-          </ul>
-        </SoftCard>
+          </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          <Link to="/calls"><Quick icon={<PhoneCall className="w-5 h-5" />} label="Recent calls" /></Link>
-          <Link to="/family/medicines"><Quick icon={<Pill className="w-5 h-5" />} label="Medicines" /></Link>
-          <Link to="/family/appointments/new"><Quick icon={<Calendar className="w-5 h-5" />} label="Appointments" /></Link>
-          <Link to="/family/insights"><Quick icon={<HeartPulse className="w-5 h-5" />} label="Insights" /></Link>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2">
+          <span className={cn("inline-flex items-center gap-1.5 text-[13px] font-medium", selected.status === "safe" ? "text-primary" : "text-[oklch(0.55_0.13_65)]")}>
+            <span className={cn("w-2 h-2 rounded-full", selected.status === "safe" ? "bg-success" : "bg-warning")} />
+            {selected.status === "safe" ? "Safe" : "Needs attention"} · {selected.lastSeen}
+          </span>
+          <CheckInChip parentId={selected.id} />
+          <ThereTime timeZone={selected.timezone} />
         </div>
 
-        <ActivityStrip />
+        <div className="flex justify-between px-2">
+          {actions.map(({ icon: Icon, label, run }) => (
+            <button key={label} onClick={run} aria-label={`${label} ${first}`}
+              className="glass w-[52px] h-[52px] rounded-full grid place-items-center text-primary active:scale-95 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+              <Icon size={23} weight="light" />
+            </button>
+          ))}
+        </div>
+
+        <RecapPill text={`${first}'s week in one read`} onOpen={() => setRecapOpen(true)} />
+
+        <section className="card-bz rounded-3xl p-4 divide-y divide-border" aria-label="Coming up">
+          <div className="flex items-center gap-3 pb-3">
+            <span className="w-10 h-10 rounded-[14px] bg-warning/25 text-[oklch(0.5_0.12_65)] grid place-items-center"><Clock size={21} weight="light" /></span>
+            <div className="min-w-0">
+              <div className="text-[15.5px] font-semibold truncate">{med?.name ? `${med.name}${med.dose ? ` · ${med.dose}` : ""}` : selected.medsPending ? `${selected.medsPending} medicine pending` : "All medicines taken"}</div>
+              <div className="text-[12.5px] text-muted-foreground">{med?.time ? `Next dose ${med.time}` : "Nothing due right now"}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 pt-3">
+            <span className="w-10 h-10 rounded-[14px] bg-primary/12 text-primary grid place-items-center"><CalendarBlank size={21} weight="light" /></span>
+            <div className="min-w-0">
+              <div className="text-[15.5px] font-semibold truncate">{appt?.doctor ? `${appt.doctor}${appt.time ? ` · ${appt.time}` : ""}` : "No visit scheduled"}</div>
+              <div className="text-[12.5px] text-muted-foreground">{appt?.specialty ?? "Add one from Visits"}</div>
+            </div>
+          </div>
+        </section>
+
+        <TileGrid tiles={TILES} />
       </div>
-      {dialog && (
-        <ActionDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          kind={dialog.kind}
-          contactName={dialog.name}
-          emoji={dialog.emoji}
-        />
-      )}
-      <CallDialog
-        open={callOpen}
-        onOpenChange={setCallOpen}
-        contact={callContact}
-        direction={callDir}
-        mode={callMode}
-      />
+
+      <RecapFor p={selected} open={recapOpen} onOpenChange={setRecapOpen} />
+      {dialog && <ActionDialog open={dialogOpen} onOpenChange={setDialogOpen} kind={dialog.kind} contactName={dialog.name} emoji="" />}
+      <CallDialog open={callOpen} onOpenChange={setCallOpen} contact={contact} direction="outgoing" mode={callMode} />
       <MediaViewerDialog open={mediaOpen} onOpenChange={setMediaOpen} item={mediaItem} />
     </Screen>
   );
 }
 
-function Mini({ icon, label }: { icon: React.ReactNode; label: string }) {
+function ParentSlide({ p }: { p: P }) {
+  const vitals = useVitals(p.id);
   return (
-    <div className="rounded-2xl bg-card px-2 py-2 flex flex-col items-center gap-1 text-center">
-      <div className="text-muted-foreground">{icon}</div>
-      <div className="text-xs font-medium truncate w-full">{label}</div>
+    <div className="snap-center shrink-0 basis-[91%]">
+      <PersonHero name={p.name} age={p.age} photoUrl={p.photoUrl} vitals={vitals} online={p.status === "safe"} />
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-2.5 px-3">
+        <Heartbeat size={14} weight="light" /> {p.device ? `${p.device} · synced just now` : "Health data from their phone"}
+      </div>
     </div>
   );
 }
 
-function Quick({ icon, label }: { icon: React.ReactNode; label: string }) {
+function RecapFor({ p, open, onOpenChange }: { p: P; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const vitals = useVitals(p.id);
+  const first = p.name.split(" ")[0];
+  const ok = p.status === "safe";
+  // ponytail: summary composed from live numbers; swap for a model call once the server key exists.
+  const summary = `${first}'s wellness score is ${p.wellness} out of 100. ${p.medsPending ? `${p.medsPending} medicine${p.medsPending > 1 ? "s are" : " is"} still pending. ` : "All medicines are taken. "}${first} has walked ${p.steps.toLocaleString()} steps and slept ${p.sleep}. Phone battery is at ${p.battery}%.`;
   return (
-    <SoftCard className="p-4 flex items-center gap-3">
-      <div className="w-10 h-10 rounded-xl bg-muted grid place-items-center">{icon}</div>
-      <div className="font-medium">{label}</div>
-    </SoftCard>
+    <RecapSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      who={p.name}
+      summary={summary}
+      sleep={vitals.find((v) => v.key === "sleep")?.value && vitals.find((v) => v.key === "sleep")?.value !== "—" ? `${vitals.find((v) => v.key === "sleep")?.value} last night` : p.sleep}
+      vitalsNote={ok ? "All readings look steady" : "A few readings need a look"}
+    />
   );
 }

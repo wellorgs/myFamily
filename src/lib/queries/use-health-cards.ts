@@ -31,14 +31,14 @@ export function useHealthCards(parentId: string) {
 
       const data = snapshot.data();
       return [
-        { ...healthCards[0], value: data.bloodPressure || emptyHealthCards[0].value },
-        { ...healthCards[1], value: data.sugarFasting || emptyHealthCards[1].value },
-        { ...healthCards[2], value: data.heartRate || emptyHealthCards[2].value },
-        { ...healthCards[3], value: data.weight || emptyHealthCards[3].value },
-        { ...healthCards[4], value: data.sleep || emptyHealthCards[4].value },
-        { ...healthCards[5], value: data.hydration || emptyHealthCards[5].value },
-        { ...healthCards[6], value: data.steps || emptyHealthCards[6].value },
-        { ...healthCards[7], value: data.medicineAdherence || emptyHealthCards[7].value },
+        { ...emptyHealthCards[0], value: data.bloodPressure || emptyHealthCards[0].value },
+        { ...emptyHealthCards[1], value: data.sugarFasting || emptyHealthCards[1].value },
+        { ...emptyHealthCards[2], value: data.heartRate || emptyHealthCards[2].value },
+        { ...emptyHealthCards[3], value: data.weight || emptyHealthCards[3].value },
+        { ...emptyHealthCards[4], value: data.sleep || emptyHealthCards[4].value },
+        { ...emptyHealthCards[5], value: data.hydration || emptyHealthCards[5].value },
+        { ...emptyHealthCards[6], value: data.steps || emptyHealthCards[6].value },
+        { ...emptyHealthCards[7], value: data.medicineAdherence || emptyHealthCards[7].value },
       ];
     },
     { staleTime: 1000 * 60 * 5 }

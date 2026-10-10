@@ -3,6 +3,7 @@ import { PhoneFrame } from "@/components/mobile/PhoneFrame";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard, StatusDot } from "@/components/mobile/Card";
 import { useAppState } from "@/lib/app-state";
+import { BottomNav } from "@/components/mobile/BottomNav";
 import { useNotificationItems } from "@/lib/queries/use-notification-items";
 import { firebaseAuth } from "@/integrations/firebase/client";
 import { useMemo, useState } from "react";
@@ -71,7 +72,7 @@ const callContactFor = (title: string): CallContact =>
         : { name: "Mom (Anita)", emoji: "👵🏽", relation: "Parent" };
 
 function Notifications() {
-  const { familyId } = useAppState();
+  const { familyId, role } = useAppState();
   const { data: notificationItems } = useNotificationItems(familyId);
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -158,8 +159,7 @@ function Notifications() {
   return (
     <PhoneFrame>
       <Screen
-        title="Notifications"
-        back={true}
+        title="Alerts"
         right={
           <Link
             to="/calls"
@@ -302,6 +302,7 @@ function Notifications() {
           mode="audio"
         />
       </Screen>
+      <BottomNav role={role === "parent" ? "parent" : "family"} />
     </PhoneFrame>
   );
 }

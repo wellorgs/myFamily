@@ -76,8 +76,8 @@ export function getMockMedicineOCR() {
 // wellness/medsPending/steps/sleep/battery). Content mirrors the child dashboard
 // "with data" screenshot.
 export const parents = [
-  { id: "mom", name: "Mom (Anita)", status: "safe", lastSeen: "Just now", wellness: 88, medsPending: 0, steps: 4210, sleep: "7h 20m", battery: 78 },
-  { id: "dad", name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago", wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42 },
+  { id: "mom", name: "Mom (Anita)", age: 68, device: "iPhone", status: "safe", lastSeen: "Just now", wellness: 88, medsPending: 0, steps: 4210, sleep: "7h 20m", battery: 78 },
+  { id: "dad", name: "Dad (Rajiv)", age: 71, device: "Android", status: "needs-attention", lastSeen: "12 min ago", wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42 },
 ];
 
 // 8 tiles, in the order use-insights overrides them from Firestore. Each needs
