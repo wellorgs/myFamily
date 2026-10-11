@@ -49,72 +49,86 @@ const CARE =
   "You help Indian families look after elderly parents. Plain, warm, short sentences. Never diagnose or change doses; " +
   "for anything worrying, say to call the doctor.";
 
-/* 1. Medicine label */
+/* Plain functions: used by the web's server functions below AND by the native app through /api/ai/*. */
 export type ScannedLabel = { name: string; salt: string; dosage: string; frequency: string; instructions: string; uses: string };
+
+export async function scanLabelImpl(image: string, idToken: string): Promise<ScannedLabel> {
+  await requireUser(idToken);
+  const p = parseJson(
+    await gemini(
+      [
+        { text: 'Read this medicine label. JSON only: {"name" (brand),"salt" (active ingredients / composition, from the label or well-known for this brand),"dosage" (strength),"frequency","instructions","uses" (what it is for, 6 words max)}, "" if unknown. Not a medicine: {"error":"x"}.' },
+        { inline_data: { mime_type: "image/jpeg", data: image } },
+      ],
+      { json: true },
+    ),
+  );
+  if (p.error || !p.name) throw new Error("Couldn't read a medicine name. Retake the photo in better light.");
+  return { name: String(p.name), salt: String(p.salt ?? ""), dosage: String(p.dosage ?? ""), frequency: String(p.frequency ?? ""), instructions: String(p.instructions ?? ""), uses: String(p.uses ?? "") };
+}
+
+export async function lookupImpl(name: string, idToken: string) {
+  await requireUser(idToken);
+  const p = parseJson(await gemini([{ text: `Medicine sold in India: "${name}". JSON only: {"salt":"active ingredients with strength if standard","uses":"what it is for, 6 words max","howToTake":"usual way, 8 words max"}. Use "" if you are not sure it exists.` }], { system: CARE, json: true }));
+  return { salt: String(p.salt ?? ""), uses: String(p.uses ?? ""), howToTake: String(p.howToTake ?? "") };
+}
+
+export async function interactionsImpl(newMedicine: string, current: string[], idToken: string) {
+  await requireUser(idToken);
+  if (!current.length) return { warn: false, note: "" };
+  const p = parseJson(await gemini([{ text: `New: ${newMedicine}
+Current: ${current.join(", ")}
+Known significant interactions? JSON only: {"warn":boolean,"note":"one plain sentence, empty if none"}` }], { system: CARE, json: true }));
+  return { warn: !!p.warn, note: String(p.note ?? "") };
+}
+
+export async function recapImpl(who: string, facts: string, idToken: string) {
+  await requireUser(idToken);
+  return gemini([{ text: `Facts about ${who}:
+${facts}
+
+Write a 3 sentence recap for their family. Mention anything to watch.` }], { system: CARE });
+}
+
+export async function askImpl(question: string, history: { role: "user" | "ai"; text: string }[], context: string | undefined, idToken: string) {
+  await requireUser(idToken);
+  const chat = history.slice(-6).map((m) => `${m.role === "user" ? "Parent" : "Assistant"}: ${m.text}`).join(" | ");
+  return gemini([{ text: `${context ? `Their details: ${context}
+` : ""}${chat}
+Parent: ${question}
+Assistant:` }], {
+    system: `${CARE} Reply in the same language the parent used (Hindi, Hinglish, English or another Indian language). Under 60 words.`,
+  });
+}
+
+export async function alertImpl(event: string, facts: string, idToken: string) {
+  await requireUser(idToken);
+  return gemini([{ text: `Event: ${event}
+Facts: ${facts}
+One notification line (max 25 words) for the family: what happened, the key number, what to do.` }], { system: CARE });
+}
+
+/* Web server functions */
 export const scanMedicineLabel = createServerFn({ method: "POST" })
   .inputValidator((d: { image: string; idToken: string }) => d)
-  .handler(async ({ data }): Promise<ScannedLabel> => {
-    await requireUser(data.idToken);
-    const p = parseJson(
-      await gemini(
-        [
-          { text: 'Read this medicine label. JSON only: {"name" (brand),"salt" (active ingredients / composition, from the label or well-known for this brand),"dosage" (strength),"frequency","instructions","uses" (what it is for, 6 words max)}, "" if unknown. Not a medicine: {"error":"x"}.' },
-          { inline_data: { mime_type: "image/jpeg", data: data.image } },
-        ],
-        { json: true },
-      ),
-    );
-    if (p.error || !p.name) throw new Error("Couldn't read a medicine name. Retake the photo in better light.");
-    return { name: String(p.name), salt: String(p.salt ?? ""), dosage: String(p.dosage ?? ""), frequency: String(p.frequency ?? ""), instructions: String(p.instructions ?? ""), uses: String(p.uses ?? "") };
-  });
+  .handler(({ data }) => scanLabelImpl(data.image, data.idToken));
 
-/* 1b. Known medicine by name (typed, or after a scan edit) */
 export const lookupMedicine = createServerFn({ method: "POST" })
   .inputValidator((d: { idToken: string; name: string }) => d)
-  .handler(async ({ data }): Promise<{ salt: string; uses: string; howToTake: string }> => {
-    await requireUser(data.idToken);
-    const p = parseJson(await gemini([{ text: `Medicine sold in India: "${data.name}". JSON only: {"salt":"active ingredients with strength if standard","uses":"what it is for, 6 words max","howToTake":"usual way, 8 words max"}. Use "" if you are not sure it exists.` }], { system: CARE, json: true }));
-    return { salt: String(p.salt ?? ""), uses: String(p.uses ?? ""), howToTake: String(p.howToTake ?? "") };
-  });
+  .handler(({ data }) => lookupImpl(data.name, data.idToken));
 
-/* 2. Weekly / daily recap */
 export const writeRecap = createServerFn({ method: "POST" })
   .inputValidator((d: { idToken: string; who: string; facts: string }) => d)
-  .handler(async ({ data }): Promise<string> => {
-    await requireUser(data.idToken);
-    return gemini([{ text: `Facts about ${data.who}:\n${data.facts}\n\nWrite a 3 sentence recap for their family. Mention anything to watch.` }], { system: CARE });
-  });
+  .handler(({ data }) => recapImpl(data.who, data.facts, data.idToken));
 
-/* 5. Ask AI (voice or text; replies in the language asked) */
 export const askAssistant = createServerFn({ method: "POST" })
   .inputValidator((d: { idToken: string; question: string; history: { role: "user" | "ai"; text: string }[]; context?: string }) => d)
-  .handler(async ({ data }): Promise<string> => {
-    await requireUser(data.idToken);
-    const chat = data.history.slice(-6).map((m) => `${m.role === "user" ? "Parent" : "Assistant"}: ${m.text}`).join("\n");
-    return gemini([{ text: `${data.context ? `Their details: ${data.context}\n` : ""}${chat}\nParent: ${data.question}\nAssistant:` }], {
-      system: `${CARE} Reply in the same language the parent used (Hindi, Hinglish, English or another Indian language). Under 60 words.`,
-    });
-  });
+  .handler(({ data }) => askImpl(data.question, data.history, data.context, data.idToken));
 
-/* 7. Does a new medicine clash with the current ones? */
 export const checkInteractions = createServerFn({ method: "POST" })
   .inputValidator((d: { idToken: string; newMedicine: string; current: string[] }) => d)
-  .handler(async ({ data }): Promise<{ warn: boolean; note: string }> => {
-    await requireUser(data.idToken);
-    if (!data.current.length) return { warn: false, note: "" };
-    const p = parseJson(
-      await gemini(
-        [{ text: `New: ${data.newMedicine}\nCurrent: ${data.current.join(", ")}\nKnown significant interactions? JSON only: {"warn":boolean,"note":"one plain sentence, empty if none"}` }],
-        { system: CARE, json: true },
-      ),
-    );
-    return { warn: !!p.warn, note: String(p.note ?? "") };
-  });
+  .handler(({ data }) => interactionsImpl(data.newMedicine, data.current, data.idToken));
 
-/* 9. Alert text with context */
 export const composeAlert = createServerFn({ method: "POST" })
   .inputValidator((d: { idToken: string; event: string; facts: string }) => d)
-  .handler(async ({ data }): Promise<string> => {
-    await requireUser(data.idToken);
-    return gemini([{ text: `Event: ${data.event}\nFacts: ${data.facts}\nOne notification line (max 25 words) for the family: what happened, the key number, what to do.` }], { system: CARE });
-  });
+  .handler(({ data }) => alertImpl(data.event, data.facts, data.idToken));

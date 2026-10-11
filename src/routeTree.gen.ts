@@ -35,6 +35,7 @@ import { Route as ParentHealthRouteImport } from './routes/parent.health'
 import { Route as ParentHomeRouteImport } from './routes/parent.home'
 import { Route as ParentProfileRouteImport } from './routes/parent.profile'
 import { Route as SetupCompleteRouteImport } from './routes/setup.complete'
+import { Route as ApiAiOpRouteImport } from './routes/api.ai.$op'
 import { Route as FamilyAppointmentsNewRouteImport } from './routes/family.appointments.new'
 import { Route as FamilyMedicineScanRouteImport } from './routes/family.medicine.scan'
 import { Route as FamilyParentsIdRouteImport } from './routes/family.parents.$id'
@@ -170,6 +171,11 @@ const SetupCompleteRoute = SetupCompleteRouteImport.update({
   path: '/setup/complete',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiOpRoute = ApiAiOpRouteImport.update({
+  id: '/api/ai/$op',
+  path: '/api/ai/$op',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FamilyAppointmentsNewRoute = FamilyAppointmentsNewRouteImport.update({
   id: '/appointments/new',
   path: '/appointments/new',
@@ -218,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/parent/home': typeof ParentHomeRoute
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
+  '/api/ai/$op': typeof ApiAiOpRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
   '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/parent/home': typeof ParentHomeRoute
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
+  '/api/ai/$op': typeof ApiAiOpRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
   '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/parent/home': typeof ParentHomeRoute
   '/parent/profile': typeof ParentProfileRoute
   '/setup/complete': typeof SetupCompleteRoute
+  '/api/ai/$op': typeof ApiAiOpRoute
   '/family/appointments/new': typeof FamilyAppointmentsNewRoute
   '/family/medicine/scan': typeof FamilyMedicineScanRoute
   '/family/parents/$id': typeof FamilyParentsIdRoute
@@ -317,6 +326,7 @@ export interface FileRouteTypes {
     | '/parent/home'
     | '/parent/profile'
     | '/setup/complete'
+    | '/api/ai/$op'
     | '/family/appointments/new'
     | '/family/medicine/scan'
     | '/family/parents/$id'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/parent/home'
     | '/parent/profile'
     | '/setup/complete'
+    | '/api/ai/$op'
     | '/family/appointments/new'
     | '/family/medicine/scan'
     | '/family/parents/$id'
@@ -381,6 +392,7 @@ export interface FileRouteTypes {
     | '/parent/home'
     | '/parent/profile'
     | '/setup/complete'
+    | '/api/ai/$op'
     | '/family/appointments/new'
     | '/family/medicine/scan'
     | '/family/parents/$id'
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   SosRoute: typeof SosRoute
   WelcomeRoute: typeof WelcomeRoute
   SetupCompleteRoute: typeof SetupCompleteRoute
+  ApiAiOpRoute: typeof ApiAiOpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -587,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/$op': {
+      id: '/api/ai/$op'
+      path: '/api/ai/$op'
+      fullPath: '/api/ai/$op'
+      preLoaderRoute: typeof ApiAiOpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/family/appointments/new': {
       id: '/family/appointments/new'
       path: '/appointments/new'
@@ -704,6 +724,7 @@ const rootRouteChildren: RootRouteChildren = {
   SosRoute: SosRoute,
   WelcomeRoute: WelcomeRoute,
   SetupCompleteRoute: SetupCompleteRoute,
+  ApiAiOpRoute: ApiAiOpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
