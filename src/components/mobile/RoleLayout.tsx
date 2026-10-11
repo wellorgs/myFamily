@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { PhoneFrame } from "./PhoneFrame";
 import { BottomNav } from "./BottomNav";
@@ -9,6 +9,7 @@ export function RoleLayout({ role, children }: { role: "parent" | "family"; chil
   const state = useAppState();
   const hydrated = useHydrated();
   const navigate = useNavigate();
+  const immersive = useRouterState({ select: (r) => r.location.pathname.endsWith("/medicine/scan") });
 
   useEffect(() => {
     if (!hydrated) return;
@@ -23,7 +24,7 @@ export function RoleLayout({ role, children }: { role: "parent" | "family"; chil
       <div className="flex-1 flex flex-col min-h-0">
         {children ?? <Outlet />}
       </div>
-      <BottomNav role={role} />
+      {!immersive && <BottomNav role={role} />}
     </PhoneFrame>
   );
 }

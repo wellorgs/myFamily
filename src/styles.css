@@ -263,3 +263,5 @@
   box-shadow: 0 1px 2px oklch(0.3 0.03 165 / 0.05);
 }
 @utility font-display { font-family: var(--font-display); }
+
+@keyframes scan { 0%, 100% { top: 6%; } 50% { top: 92%; } }

@@ -1,432 +1,262 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Screen } from "@/components/mobile/Screen";
-import { SoftCard } from "@/components/mobile/Card";
-import { Button } from "@/components/ui/button";
-import { Camera, CheckCircle2, Clock, AlertCircle, Loader, Keyboard } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { scanMedicineLabel, checkInteractions } from "@/lib/ai";
-import { useFamilyMedicines } from "@/lib/queries/use-family-medicines";
-import { firebaseAuth } from "@/integrations/firebase/client";
-import { useParents } from "@/lib/queries/use-parents";
-import { useSelectedParent } from "@/lib/selected-parent";
+import { ArrowLeft, Check, Image as ImageIcon, Keyboard, Warning, X } from "@phosphor-icons/react";
+import { ScheduleFields } from "@/components/mobile/MedicineEditor";
 import { useAppState } from "@/lib/app-state";
-import { useSetupStore } from "@/lib/setup-store";
 import { isMockAccount } from "@/lib/account-utils";
-import { saveScannedMedicine } from "@/lib/medicine-operations";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-interface MedicineData {
-  medicineName: string | null;
-  dosage: string | null;
-  frequency: string | null;
-  instructions: string | null;
-  sideEffects: string | null;
-  expiryDate: string | null;
-  manufacturer: string | null;
-  medicineType?: string | null;
-}
+import { firebaseAuth } from "@/integrations/firebase/client";
+import { checkInteractions, lookupMedicine, scanMedicineLabel } from "@/lib/ai";
+import { useParents } from "@/lib/queries/use-parents";
+import { useFamilyMedicines } from "@/lib/queries/use-family-medicines";
+import { useSelectedParent } from "@/lib/selected-parent";
+import { useSetupStore } from "@/lib/setup-store";
+import { ALL_DAYS, defaultSlots, saveScannedMedicine, type MedicineSlot } from "@/lib/medicine-operations";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/parent/medicine/scan")({
   head: () => ({ meta: [{ title: "Scan medicine — myFamily" }] }),
   component: Scan,
 });
 
+type Phase = "capture" | "reading" | "review";
+const token = async () => (await firebaseAuth.currentUser?.getIdToken()) ?? "";
+
+/** Shrinks a photo so the upload stays small on mobile data. */
+async function toJpegBase64(src: ImageBitmap | HTMLVideoElement, w: number, h: number): Promise<{ b64: string; url: string }> {
+  const scale = Math.min(1, 1280 / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+  c.getContext("2d")!.drawImage(src, 0, 0, c.width, c.height);
+  const url = c.toDataURL("image/jpeg", 0.82);
+  return { b64: url.split(",")[1], url };
+}
+
 export function Scan() {
-  const [step, setStep] = useState<"camera" | "detected" | "sent" | "error" | "processing" | "manual">("camera");
-  const [manualName, setManualName] = useState("");
-  const [manualDosage, setManualDosage] = useState("");
-  const [manualFrequency, setManualFrequency] = useState("");
-  const [manualInstructions, setManualInstructions] = useState("");
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [medicineData, setMedicineData] = useState<MedicineData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { parentId, familyId, email, role } = useAppState();
-  const homeRoute = role === "parent" ? "/parent/home" : "/family/dashboard";
-  const setupStore = useSetupStore(parentId);
+  const byFamily = role !== "parent";
   const { data: parentList } = useParents(familyId);
   const { selected } = useSelectedParent(parentList as { id: string; name: string }[] | undefined);
-  const byFamily = role !== "parent";
-  const { data: existingMeds } = useFamilyMedicines(familyId);
+  const { data: existing } = useFamilyMedicines(familyId);
+  const setup = useSetupStore(parentId);
+  const forWhom = byFamily ? selected?.name.split(" ")[0] : undefined;
+
+  const [phase, setPhase] = useState<Phase>("capture");
+  const [camErr, setCamErr] = useState("");
+  const [shot, setShot] = useState("");
+  const [name, setName] = useState("");
+  const [salt, setSalt] = useState("");
+  const [dose, setDose] = useState("");
+  const [uses, setUses] = useState("");
+  const [slots, setSlots] = useState<MedicineSlot[]>(defaultSlots(1));
+  const [days, setDays] = useState<number[]>(ALL_DAYS);
+  const [remind, setRemind] = useState(true);
   const [clash, setClash] = useState("");
   const [saving, setSaving] = useState(false);
+  const video = useRef<HTMLVideoElement>(null);
+  const picker = useRef<HTMLInputElement>(null);
+  const stream = useRef<MediaStream | null>(null);
 
-  const handleSendForApproval = async () => {
-    if (!medicineData?.medicineName) return;
+  const stop = () => stream.current?.getTracks().forEach((t) => t.stop());
+
+  useEffect(() => {
+    if (phase !== "capture") return;
+    let live = true;
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false })
+      .then((s) => {
+        if (!live) { s.getTracks().forEach((t) => t.stop()); return; }
+        stream.current = s;
+        if (video.current) video.current.srcObject = s;
+        setCamErr("");
+      })
+      .catch(() => live && setCamErr("Camera is off. Allow it in your browser settings, or pick a photo instead."));
+    return () => { live = false; stop(); };
+  }, [phase]);
+
+  const fill = (r: { name?: string; salt?: string; dosage?: string; uses?: string }) => {
+    setName(r.name ?? ""); setSalt(r.salt ?? ""); setDose(r.dosage ?? ""); setUses(r.uses ?? "");
+  };
+
+  const checkClash = async (n: string) => {
+    setClash("");
+    try {
+      const target = byFamily ? selected?.id : parentId;
+      const current = ((existing ?? []) as { name: string; parentId?: string; verified?: boolean }[])
+        .filter((m) => m.verified && (!m.parentId || m.parentId === target)).map((m) => m.name);
+      const r = await checkInteractions({ data: { idToken: await token(), newMedicine: n, current } });
+      if (r.warn) setClash(r.note);
+    } catch { /* AI unavailable: skip */ }
+  };
+
+  const read = async (b64: string, url: string) => {
+    setShot(url); setPhase("reading"); stop();
+    try {
+      const r = await scanMedicineLabel({ data: { image: b64, idToken: await token() } });
+      fill(r); setPhase("review"); void checkClash(r.name);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't read that label.");
+      setShot(""); setPhase("capture");
+    }
+  };
+
+  const snap = async () => {
+    const v = video.current;
+    if (!v || !v.videoWidth) return;
+    const { b64, url } = await toJpegBase64(v, v.videoWidth, v.videoHeight);
+    void read(b64, url);
+  };
+
+  const fromFile = async (f?: File) => {
+    if (!f) return;
+    const bmp = await createImageBitmap(f);
+    const { b64, url } = await toJpegBase64(bmp, bmp.width, bmp.height);
+    void read(b64, url);
+  };
+
+  const typeInstead = () => { stop(); setShot(""); fill({}); setPhase("review"); };
+
+  // Known medicine by name: fill the salt and use if they are empty.
+  const lookup = async () => {
+    const n = name.trim();
+    if (n.length < 3 || salt) return;
+    try {
+      const r = await lookupMedicine({ data: { idToken: await token(), name: n } });
+      if (r.salt) setSalt(r.salt);
+      if (r.uses && !uses) setUses(r.uses);
+      void checkClash(n);
+    } catch { /* optional */ }
+  };
+
+  const save = async () => {
+    if (!name.trim()) { toast.error("Enter the medicine name"); return; }
+    if (days.length === 0) { toast.error("Pick at least one day"); return; }
+    if (new Set(slots.map((s) => s.time)).size !== slots.length) { toast.error("Two doses can't share a time"); return; }
     setSaving(true);
     try {
-      // Real accounts persist a pending medicine; demo/mock accounts skip the
-      // write (their data is seeded) but still complete the setup step.
       if (!isMockAccount(email)) {
         await saveScannedMedicine({
-          name: medicineData.medicineName,
-          dosage: medicineData.dosage,
-          frequency: medicineData.frequency,
-          instructions: medicineData.instructions,
+          name: name.trim(), salt, uses, dosage: dose,
+          schedule: { slots, days, refillAtDays: remind ? 7 : 0 },
           familyId,
           parentId: byFamily ? selected?.id : undefined,
-          parentName: byFamily ? selected?.name.split(" ")[0] : undefined,
+          parentName: forWhom,
           autoApprove: byFamily,
         });
+        await qc.invalidateQueries({ queryKey: ["familyMedicines", familyId] });
       }
-      setupStore.markStepDone("medicine");
-      setStep("sent");
-      toast.success(byFamily ? "Medicine added" : "Sent to family for approval");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not save medicine. Please try again.");
+      setup.markStepDone("medicine");
+      toast.success(byFamily ? `${name.trim()} added` : "Sent to your family to approve");
+      navigate({ to: byFamily ? "/family/medicines" : "/parent/home" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save. Try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleManualSubmit = () => {
-    if (!manualName.trim()) {
-      toast.error("Enter the medicine name.");
-      return;
-    }
-    // The "detected" step normally loads from sessionStorage (OCR result); clear
-    // any stale entry so it doesn't clobber this manually-entered data.
-    sessionStorage.removeItem("detectedMedicine");
-    setMedicineData({
-      medicineName: manualName.trim(),
-      dosage: manualDosage.trim() || null,
-      frequency: manualFrequency.trim() || null,
-      instructions: manualInstructions.trim() || null,
-      sideEffects: null,
-      expiryDate: null,
-      manufacturer: null,
-    });
-    setStep("detected");
-  };
+  const close = () => navigate({ to: byFamily ? "/family/medicines" : "/parent/home" });
 
-  useEffect(() => {
-    // Load detected medicine data from session storage
-    if (step === "detected") {
-      const stored = sessionStorage.getItem("detectedMedicine");
-      if (stored) {
-        try {
-          setMedicineData(JSON.parse(stored));
-        } catch {
-          setCameraError("Failed to load medicine data");
-        }
-      }
-    }
-  }, [step]);
+  /* ------------ capture / reading: full-bleed camera ------------ */
+  if (phase !== "review") {
+    return (
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="relative flex-1 min-h-0 bg-black overflow-hidden text-white">
+          {phase === "reading" && shot
+            ? <img src={shot} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            : <video ref={video} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/70" />
 
-  useEffect(() => {
-    if (step !== "camera") return;
-
-    const startCamera = async () => {
-      try {
-        console.log("Requesting camera access...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setCameraError(null);
-          console.log("Camera started successfully");
-          toast.success("Camera ready. Position medicine label and tap Capture.");
-        }
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Camera access denied";
-        console.error("Camera error:", errorMsg);
-        setCameraError(errorMsg);
-        setStep("error");
-      }
-    };
-
-    startCamera();
-
-    return () => {
-      if (videoRef.current?.srcObject) {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => {
-          track.stop();
-          console.log("Camera stopped");
-        });
-      }
-    };
-  }, [step]);
-
-  const capturePhoto = async () => {
-    if (!videoRef.current || !canvasRef.current) {
-      setCameraError("Camera not ready. Please try again.");
-      return;
-    }
-
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) {
-      setCameraError("Failed to capture image");
-      return;
-    }
-
-    try {
-      console.log("Capturing photo...");
-      canvasRef.current.width = videoRef.current.videoWidth;
-      canvasRef.current.height = videoRef.current.videoHeight;
-
-      if (canvasRef.current.width === 0 || canvasRef.current.height === 0) {
-        throw new Error("Video not ready. Please wait a moment and try again.");
-      }
-
-      ctx.drawImage(videoRef.current, 0, 0);
-      const imageData = canvasRef.current.toDataURL("image/jpeg", 0.8).split(",")[1];
-
-      if (!imageData) {
-        throw new Error("Failed to capture image data");
-      }
-
-      console.log("Image captured, sending to DeepSeek Vision API...");
-      setStep("processing");
-      setIsLoading(true);
-      await analyzeMedicineLabel(imageData);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Failed to capture image";
-      console.error("Capture error:", errorMsg);
-      setCameraError(errorMsg);
-      setStep("error");
-      setIsLoading(false);
-    }
-  };
-
-  // Best-effort safety check; never blocks adding the medicine.
-  const warnIfClash = async (name: string) => {
-    setClash("");
-    try {
-      const target = byFamily ? selected?.id : parentId;
-      const current = ((existingMeds ?? []) as { name: string; parentId?: string; verified?: boolean }[])
-        .filter((m) => m.verified && (!m.parentId || m.parentId === target)).map((m) => m.name);
-      const idToken = (await firebaseAuth.currentUser?.getIdToken()) ?? "";
-      const r = await checkInteractions({ data: { idToken, newMedicine: name, current } });
-      if (r.warn) setClash(r.note);
-    } catch { /* AI unavailable: skip */ }
-  };
-
-  const analyzeMedicineLabel = async (base64Image: string) => {
-    try {
-      console.log("Calling DeepSeek Vision API for medicine OCR...");
-      setIsLoading(true);
-
-      // Use DeepSeek-VL2 via gemini-ai module
-      const idToken = (await firebaseAuth.currentUser?.getIdToken()) ?? "";
-      const ocrResult = await scanMedicineLabel({ data: { image: base64Image, idToken } });
-
-      const medicineData: MedicineData = {
-        medicineName: ocrResult.name || null,
-        dosage: ocrResult.dosage || null,
-        frequency: ocrResult.frequency || null,
-        instructions: ocrResult.instructions || null,
-        sideEffects: null,
-        expiryDate: null,
-        manufacturer: null,
-      };
-
-      // Validate that we got at least a medicine name
-      if (!medicineData.medicineName) {
-        throw new Error(
-          "Could not identify medicine name from label. Please ensure the label is clearly visible and well-lit."
-        );
-      }
-
-      console.log("Parsed medicine data:", medicineData);
-
-      // Store the detected medicine data for display
-      sessionStorage.setItem("detectedMedicine", JSON.stringify(medicineData));
-      void warnIfClash(medicineData.medicineName);
-
-      toast.success("Medicine label scanned successfully!");
-      setIsLoading(false);
-      setStep("detected");
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to analyze medicine label";
-      console.error("Analysis error:", errorMessage);
-      setCameraError(errorMessage);
-      setIsLoading(false);
-      setStep("error");
-      toast.error(errorMessage);
-    }
-  };
-
-  return (
-    <Screen title="Scan medicine" back={true}>
-      {step === "camera" && (
-        <div className="space-y-4">
-          <div className="aspect-[3/4] rounded-3xl bg-slate-900 text-white grid place-items-center relative overflow-hidden">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <canvas ref={canvasRef} className="hidden" />
-            <div className="absolute inset-6 border-4 border-dashed border-yellow-400 rounded-2xl pointer-events-none" />
-            <p className="absolute bottom-6 text-center text-sm font-medium bg-black/50 px-4 py-2 rounded-full">
-              Position label clearly within frame
-            </p>
+          <div className="absolute top-0 inset-x-0 flex items-center justify-between px-5 pt-5">
+            <button onClick={close} aria-label="Close" className="w-11 h-11 rounded-full bg-white/15 backdrop-blur-xl grid place-items-center"><X size={20} /></button>
+            <div className="px-4 h-9 rounded-full bg-white/15 backdrop-blur-xl grid place-items-center text-[13px] font-semibold">
+              {forWhom ? `For ${forWhom}` : "Scan medicine"}
+            </div>
+            <span className="w-11" />
           </div>
-          <p className="text-sm text-muted-foreground text-center">
-            Works for tablets, drops, sprays, syrups, and any medicine packaging
-          </p>
-          <Button className="w-full h-14 rounded-2xl text-base" onClick={capturePhoto} disabled={isLoading}>
-            {isLoading ? "Processing..." : "Capture"}
-          </Button>
-          <Button variant="ghost" className="w-full rounded-full" onClick={() => setStep("manual")}>
-            <Keyboard className="w-4 h-4 mr-2" /> No camera? Enter details manually
-          </Button>
+
+          {/* label frame */}
+          <div className="absolute inset-x-8 top-[22%] h-[40%] pointer-events-none">
+            {["top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-3xl", "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-3xl",
+              "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-3xl", "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-3xl"].map((c) => (
+              <span key={c} className={cn("absolute w-10 h-10 border-white", c)} />
+            ))}
+            {phase === "reading" && <span className="absolute inset-x-2 h-[2px] bg-primary shadow-[0_0_14px_var(--color-primary)] animate-[scan_1.6s_ease-in-out_infinite]" />}
+          </div>
+
+          <div className="absolute inset-x-0 top-[66%] text-center px-8">
+            <div className="text-[17px] font-semibold">{phase === "reading" ? "Reading the label" : "Fit the label in the frame"}</div>
+            <div className="text-[13px] text-white/70 mt-1">{phase === "reading" ? "Finding the name, salt and strength" : "Strip, bottle or box. Hold steady."}</div>
+          </div>
+
+          {camErr && phase === "capture" && (
+            <div className="absolute inset-x-5 top-[18%] rounded-2xl bg-black/60 backdrop-blur-xl p-4 text-[13.5px]">{camErr}</div>
+          )}
+
+          {phase === "capture" && (
+            <div className="absolute bottom-0 inset-x-0 pb-8 px-8 flex items-center justify-between">
+              <button onClick={() => picker.current?.click()} aria-label="Choose a photo" className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-xl grid place-items-center"><ImageIcon size={24} /></button>
+              <button onClick={snap} disabled={!!camErr} aria-label="Take photo" className="w-[76px] h-[76px] rounded-full border-4 border-white grid place-items-center active:scale-95 transition-transform disabled:opacity-40">
+                <span className="w-[58px] h-[58px] rounded-full bg-white" />
+              </button>
+              <button onClick={typeInstead} aria-label="Type it instead" className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-xl grid place-items-center"><Keyboard size={24} /></button>
+            </div>
+          )}
+          <input ref={picker} type="file" accept="image/*" capture="environment" hidden onChange={(e) => fromFile(e.target.files?.[0])} />
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {step === "processing" && (
-        <SoftCard className="text-center py-10 space-y-4">
-          <Loader className="w-12 h-12 mx-auto animate-spin text-primary" />
-          <div className="text-lg font-semibold">Analyzing medicine label...</div>
-          <p className="text-sm text-muted-foreground">
-            Using AI to extract information from the label. This may take a few seconds.
-          </p>
-        </SoftCard>
-      )}
-
-      {step === "detected" && medicineData && (
-        <SoftCard className="space-y-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-6 h-6 text-success" />
-            <div className="font-semibold">Medicine detected</div>
-          </div>
-          {medicineData.medicineType && (
-            <Field label="Type" value={medicineData.medicineType} />
-          )}
-          {medicineData.medicineName && (
-            <Field label="Name" value={medicineData.medicineName} />
-          )}
-          {clash && <div role="alert" className="rounded-2xl bg-warning/25 p-3 text-sm font-medium">Check with the doctor: {clash}</div>}
-          {medicineData.dosage && <Field label="Dosage" value={medicineData.dosage} />}
-          {medicineData.frequency && <Field label="Frequency" value={medicineData.frequency} />}
-          {medicineData.instructions && (
-            <Field label="Instructions" value={medicineData.instructions} />
-          )}
-          {medicineData.manufacturer && (
-            <Field label="Manufacturer" value={medicineData.manufacturer} />
-          )}
-          {medicineData.sideEffects && (
-            <Field label="Side effects" value={medicineData.sideEffects} />
-          )}
-          {medicineData.expiryDate && (
-            <Field label="Expiry date" value={medicineData.expiryDate} />
-          )}
-          <Button
-            className="w-full h-12 rounded-2xl"
-            onClick={handleSendForApproval}
-            disabled={saving}
-          >
-            {saving ? "Saving…" : byFamily ? "Add medicine" : "Send to family for approval"}
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full h-12 rounded-2xl"
-            onClick={() => {
-              setCameraError(null);
-              setStep("camera");
-            }}
-          >
-            Scan another
-          </Button>
-        </SoftCard>
-      )}
-
-      {step === "sent" && (
-        <SoftCard className="text-center py-10 space-y-3">
-          <Clock className="w-12 h-12 mx-auto text-primary" />
-          <div className="text-lg font-semibold">{byFamily ? "Medicine added" : "Waiting for approval"}</div>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            {byFamily
-              ? `${medicineData?.medicineName ?? "Medicine"} is now on ${selected?.name.split(" ")[0] ?? "their"} list. Set the dose times from Medicines.`
-              : `${medicineData?.medicineName ?? "Medicine"} was sent to your family. Anyone in the family can approve it, then reminders start.`}
-          </p>
-          <Button
-            variant="secondary"
-            className="rounded-full"
-            onClick={() => navigate({ to: homeRoute })}
-          >
-            Back home
-          </Button>
-        </SoftCard>
-      )}
-
-      {step === "error" && (
-        <SoftCard className="text-center py-10 space-y-4 border-amber-200 bg-amber-50">
-          <AlertCircle className="w-12 h-12 mx-auto text-amber-600" />
-          <div className="text-lg font-semibold text-amber-900">Unable to scan medicine</div>
-          <p className="text-sm text-amber-800 max-w-xs mx-auto font-medium">{cameraError}</p>
-          <p className="text-xs text-amber-700 max-w-xs mx-auto">
-            💡 Tips: Ensure good lighting, label is clear and not blurry, and the medicine packaging is fully
-            visible
-          </p>
-          <div className="flex gap-2 justify-center pt-2">
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() => {
-                setCameraError(null);
-                setIsLoading(false);
-                setStep("camera");
-              }}
-            >
-              Try again
-            </Button>
-            <Button
-              variant="secondary"
-              className="rounded-full"
-              onClick={() => navigate({ to: homeRoute })}
-            >
-              Back home
-            </Button>
-          </div>
-          <Button
-            variant="ghost"
-            className="rounded-full mt-1"
-            onClick={() => { setCameraError(null); setStep("manual"); }}
-          >
-            <Keyboard className="w-4 h-4 mr-2" /> Enter medicine details manually
-          </Button>
-        </SoftCard>
-      )}
-
-      {step === "manual" && (
-        <SoftCard className="space-y-4">
-          <div className="text-lg font-semibold">Add medicine manually</div>
-          <div>
-            <Label>Medicine name</Label>
-            <Input value={manualName} onChange={(e) => setManualName(e.target.value)} placeholder="e.g. Metformin" className="h-12 rounded-2xl mt-1" />
-          </div>
-          <div>
-            <Label>Dosage</Label>
-            <Input value={manualDosage} onChange={(e) => setManualDosage(e.target.value)} placeholder="e.g. 500 mg" className="h-12 rounded-2xl mt-1" />
-          </div>
-          <div>
-            <Label>Frequency</Label>
-            <Input value={manualFrequency} onChange={(e) => setManualFrequency(e.target.value)} placeholder="e.g. Twice daily" className="h-12 rounded-2xl mt-1" />
-          </div>
-          <div>
-            <Label>Instructions</Label>
-            <Input value={manualInstructions} onChange={(e) => setManualInstructions(e.target.value)} placeholder="e.g. After food" className="h-12 rounded-2xl mt-1" />
-          </div>
-          <Button className="w-full h-12 rounded-2xl" onClick={handleManualSubmit}>Continue</Button>
-        </SoftCard>
-      )}
-    </Screen>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
+  /* ------------ review: edit, set times, add ------------ */
+  const label = "text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-6 mb-1.5";
+  const field = "w-full h-12 rounded-2xl bg-card border border-border px-4 text-[15px] outline-none focus:border-primary";
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
-      <div className="text-base mt-0.5">{value}</div>
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pt-4 pb-8">
+        <div className="flex items-center justify-between">
+          <button onClick={() => { setPhase("capture"); }} aria-label="Back to camera" className="card-bz w-11 h-11 rounded-full grid place-items-center"><ArrowLeft size={20} /></button>
+          <div className="text-[15px] font-semibold">{forWhom ? `For ${forWhom}` : "New medicine"}</div>
+          <span className="w-11" />
+        </div>
+
+        {shot && <img src={shot} alt="Scanned label" className="mt-4 h-28 w-full rounded-2xl object-cover" />}
+
+        <div className={label}>Medicine</div>
+        <input className={field} value={name} onChange={(e) => setName(e.target.value)} onBlur={lookup} placeholder="Name, e.g. Dolo 650" aria-label="Medicine name" />
+        <input className={cn(field, "mt-2")} value={salt} onChange={(e) => setSalt(e.target.value)} placeholder="Salt, e.g. Paracetamol" aria-label="Salt" />
+        <div className="flex gap-2 mt-2">
+          <input className={field} value={dose} onChange={(e) => setDose(e.target.value)} placeholder="Strength" aria-label="Strength" />
+          <input className={field} value={uses} onChange={(e) => setUses(e.target.value)} placeholder="Used for" aria-label="Used for" />
+        </div>
+
+        {clash && (
+          <div role="alert" className="mt-3 rounded-2xl bg-warning/25 p-3 text-[13.5px] font-medium flex gap-2">
+            <Warning size={18} weight="fill" className="shrink-0 mt-0.5" />
+            <span>Check with the doctor: {clash}</span>
+          </div>
+        )}
+
+        <ScheduleFields slots={slots} days={days} onSlots={setSlots} onDays={setDays} />
+
+        <button onClick={() => setRemind(!remind)} role="switch" aria-checked={remind} className="w-full flex items-center justify-between mt-6 text-left">
+          <span>
+            <span className="block text-[15px] font-semibold">Reminders</span>
+            <span className="block text-[12.5px] text-muted-foreground">{forWhom ? `Remind ${forWhom} at each time and when stock runs low` : "Remind at each time and when stock runs low"}</span>
+          </span>
+          <span className={cn("w-[46px] h-[28px] rounded-full relative transition-colors duration-300", remind ? "bg-primary" : "bg-muted-foreground/30")}>
+            <span className={cn("absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white shadow transition-all duration-300", remind ? "left-[21px]" : "left-[3px]")} />
+          </span>
+        </button>
+
+        <button onClick={save} disabled={saving}
+          className="mt-7 w-full h-[54px] rounded-full bg-primary text-primary-foreground font-semibold flex items-center justify-between pl-6 pr-1.5 shadow-[0_10px_22px_-10px_oklch(0.58_0.13_163/0.7)] active:scale-[0.98] transition-transform disabled:opacity-60">
+          {saving ? "Saving…" : byFamily ? "Add medicine" : "Send for approval"}
+          <span className="w-[42px] h-[42px] rounded-full bg-white/20 grid place-items-center"><Check size={20} /></span>
+        </button>
+      </div>
     </div>
   );
 }

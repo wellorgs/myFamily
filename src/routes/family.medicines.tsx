@@ -20,7 +20,7 @@ export const Route = createFileRoute("/family/medicines")({
 
 type Med = {
   id: string; name: string; dose?: string; freq?: string; food?: string; stock?: number; verified?: boolean;
-  parentId?: string; slots?: MedicineSlot[]; days?: number[]; refillAtDays?: number;
+  parentId?: string; salt?: string; slots?: MedicineSlot[]; days?: number[]; refillAtDays?: number;
 };
 
 function Meds() {
@@ -68,7 +68,7 @@ function Meds() {
         ? [<span key="f" className="inline-flex rounded-full bg-muted px-2.5 py-1 text-[11.5px] font-semibold text-muted-foreground">{m.freq}</span>]
         : [];
 
-  const open = (m: Med) => setEditing({ id: m.id, name: m.name, dose: m.dose, slots: m.slots, days: m.days, refillAtDays: m.refillAtDays });
+  const open = (m: Med) => setEditing({ id: m.id, name: m.name, dose: m.dose, salt: m.salt, slots: m.slots, days: m.days, refillAtDays: m.refillAtDays });
 
   return (
     <Screen
@@ -95,7 +95,7 @@ function Meds() {
                 <span className="w-10 h-10 rounded-[14px] bg-warning/25 text-[oklch(0.5_0.12_65)] grid place-items-center"><HourglassMedium size={21} weight="light" /></span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[15.5px] font-semibold truncate">{m.name}{m.dose ? ` · ${m.dose}` : ""}</div>
-                  <div className="text-[12.5px] text-muted-foreground">Waiting for your approval</div>
+                  <div className="text-[12.5px] text-muted-foreground">{m.salt ? `${m.salt} · ` : ""}Needs approval</div>
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
@@ -113,6 +113,7 @@ function Meds() {
                     <span className="w-10 h-10 rounded-[14px] bg-primary/12 text-primary grid place-items-center shrink-0"><Pill size={21} weight="light" /></span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15.5px] font-semibold truncate">{m.name}{m.dose ? ` · ${m.dose}` : ""}</span>
+                      {m.salt && <span className="block text-[12.5px] text-muted-foreground truncate">{m.salt}</span>}
                       <span className="flex flex-wrap gap-1.5 mt-1.5">{chips(m)}</span>
                       {typeof m.stock === "number" && (
                         <span className={m.stock <= 7 ? "block text-[12px] font-semibold text-[oklch(0.5_0.12_65)] mt-1.5" : "block text-[12px] text-muted-foreground mt-1.5"}>

@@ -176,7 +176,7 @@ function ParentSlide({ p }: { p: P }) {
     <div className="snap-center shrink-0 basis-[91%]">
       <PersonHero name={p.name} age={p.age} photoUrl={p.photoUrl} vitals={vitals} online={p.status === "safe"} />
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mt-2.5 px-3">
-        <Heartbeat size={14} weight="light" /> {p.device ? `${p.device} · synced just now` : "Health data from their phone"}
+        <Heartbeat size={14} weight="light" /> Health app not connected
       </div>
     </div>
   );

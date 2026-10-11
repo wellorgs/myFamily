@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Avatar } from "@/components/mobile/KinBlocks";
 import { Screen } from "@/components/mobile/Screen";
 import { SoftCard } from "@/components/mobile/Card";
 import { AccessibilitySettings } from "@/components/mobile/AccessibilitySettings";
@@ -58,10 +59,10 @@ function Profile() {
   return (
     <Screen title="Profile">
       <SoftCard className="flex items-center gap-4 mb-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 grid place-items-center text-2xl">👩🏽</div>
+        <Avatar name={name || "?"} className="w-16 h-16 text-2xl" />
         <div>
           <div className="text-xl font-semibold">{name}</div>
-          <div className="text-sm text-muted-foreground">Family member · Premium</div>
+          
         </div>
       </SoftCard>
 

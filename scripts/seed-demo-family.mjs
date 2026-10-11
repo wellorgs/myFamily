@@ -31,9 +31,9 @@ const FAMILY_ID = "family_test_001";
 const INVITE_CODE = "JOHNSON1";
 
 const ACCOUNTS = [
-  { email: "mom@family.local", password: "MomTest123!", name: "Mom (Anita)", role: "parent" },
-  { email: "dad@family.local", password: "DadTest123!", name: "Dad (Rajiv)", role: "parent" },
-  { email: "child@family.local", password: "ChildTest123!", name: "Arjun (Son)", role: "family" },
+  { email: "mom@family.local", password: "MomTest123!", name: "Anita", role: "parent" },
+  { email: "dad@family.local", password: "DadTest123!", name: "Rajiv", role: "parent" },
+  { email: "child@family.local", password: "ChildTest123!", name: "Arjun", role: "family" },
 ];
 
 const uids = {};
@@ -92,21 +92,21 @@ async function seedFamilyData() {
     // parents/{uid}: carries BOTH the child-dashboard fields and the
     // parent-home today-cards fields, keyed by the parent's uid.
     await setDoc(doc(db, "parents", mom), {
-      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 68, device: "iPhone", name: "Mom (Anita)", status: "safe", lastSeen: "Just now",
+      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 68, device: "iPhone", name: "Anita", status: "safe", lastSeen: "Just now",
       wellness: 88, medsPending: 0, steps: 4210, sleep: "7h 20m", battery: 78,
       nextMedicine: { name: "Metformin", dose: "500 mg", time: "8:00 AM", food: "After breakfast" },
       nextAppointment: { doctor: "Dr. Sharma", specialty: "Cardiology", time: "4:00 PM", address: "Apollo Clinic, MG Road" },
       todayWalk: { goal: 5000, done: 4210 }, todayWater: { goal: 8, done: 5 },
-      lastFamilyMessage: { from: "Arjun (Son)", preview: "Hi Mom, don't forget your evening walk 💙" },
+      lastFamilyMessage: { from: "Arjun", preview: "Hi Mom, don't forget your evening walk 💙" },
       wellnessScore: 88,
     });
     await setDoc(doc(db, "parents", dad), {
-      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 71, device: "Android", name: "Dad (Rajiv)", status: "needs-attention", lastSeen: "12 min ago",
+      familyId: FAMILY_ID, timezone: "Asia/Kolkata", age: 71, device: "Android", name: "Rajiv", status: "needs-attention", lastSeen: "12 min ago",
       wellness: 74, medsPending: 1, steps: 1820, sleep: "6h 05m", battery: 42,
       nextMedicine: { name: "Atorvastatin", dose: "10 mg", time: "9:00 PM", food: "After dinner" },
       nextAppointment: { doctor: "Dr. Rao", specialty: "General", time: "11:00 AM", address: "City Clinic" },
       todayWalk: { goal: 5000, done: 1820 }, todayWater: { goal: 8, done: 3 },
-      lastFamilyMessage: { from: "Arjun (Son)", preview: "Call me when you're free, Dad." },
+      lastFamilyMessage: { from: "Arjun", preview: "Call me when you're free, Dad." },
       wellnessScore: 74,
     });
 

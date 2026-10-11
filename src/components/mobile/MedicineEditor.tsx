@@ -8,7 +8,7 @@ import {
 } from "@/lib/medicine-operations";
 
 export type EditableMedicine = {
-  id: string; name: string; dose?: string; slots?: MedicineSlot[]; days?: number[]; refillAtDays?: number;
+  id: string; name: string; dose?: string; salt?: string; slots?: MedicineSlot[]; days?: number[]; refillAtDays?: number;
 };
 
 const FOODS: { v: MedicineSlot["food"]; label: string }[] = [
@@ -23,56 +23,16 @@ export const periodIcon = (time: string): Icon => {
   return p === "Morning" ? SunHorizon : p === "Afternoon" ? Sun : MoonStars;
 };
 
-/** Bottom sheet to set how often, when, and on which days a medicine is taken. */
-export function MedicineEditor({ med, onClose, onSaved }: { med: EditableMedicine | null; onClose: () => void; onSaved: () => void }) {
-  const [slots, setSlots] = useState<MedicineSlot[]>(defaultSlots(1));
-  const [days, setDays] = useState<number[]>(ALL_DAYS);
-  const [refill, setRefill] = useState(true);
-  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (!med) return;
-    setSlots(med.slots?.length ? med.slots : defaultSlots(1));
-    setDays(med.days?.length ? med.days : ALL_DAYS);
-    setRefill((med.refillAtDays ?? 7) > 0);
-  }, [med]);
-
-  const setCount = (n: number) => {
-    const next = defaultSlots(n);
-    // keep any times/food rules already chosen for the first slots
-    setSlots(next.map((s, i) => slots[i] ?? s));
-  };
-  const patch = (i: number, p: Partial<MedicineSlot>) => setSlots(slots.map((s, n) => (n === i ? { ...s, ...p } : s)));
-  const toggleDay = (d: number) => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort());
-
-  const save = async () => {
-    if (!med) return;
-    if (days.length === 0) { toast.error("Pick at least one day"); return; }
-    if (new Set(slots.map((s) => s.time)).size !== slots.length) { toast.error("Two doses can't share a time"); return; }
-    setBusy(true);
-    try {
-      await updateMedicineSchedule(med.id, { slots, days, refillAtDays: refill ? 7 : 0 });
-      toast.success(`${med.name} schedule saved`);
-      onSaved();
-      onClose();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't save. Try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
+/** How often, what times (with food rule) and which days. Shared by the editor and the scan flow. */
+export function ScheduleFields({ slots, days, onSlots, onDays }: {
+  slots: MedicineSlot[]; days: number[]; onSlots: (s: MedicineSlot[]) => void; onDays: (d: number[]) => void;
+}) {
+  const setCount = (n: number) => onSlots(defaultSlots(n).map((s, i) => slots[i] ?? s)); // keep times already chosen
+  const patch = (i: number, p: Partial<MedicineSlot>) => onSlots(slots.map((s, n) => (n === i ? { ...s, ...p } : s)));
+  const toggleDay = (d: number) => onDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d].sort());
   return (
-    <Drawer open={!!med} onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="max-w-[430px] mx-auto rounded-t-[34px] bg-background px-6 pb-7 pt-4 max-h-[92dvh] overflow-y-auto">
-        <div className="flex items-start justify-between">
-          <div>
-            <DrawerTitle className="text-[22px] font-bold">{med?.name}</DrawerTitle>
-            <DrawerDescription className="text-[13px] text-muted-foreground">{med?.dose || "Set when it's taken"}</DrawerDescription>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="glass w-10 h-10 rounded-full grid place-items-center"><X size={19} weight="light" /></button>
-        </div>
-
+    <>
         <div className="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mt-5 mb-1.5">How often</div>
         <div className="flex bg-muted rounded-full p-[3px] gap-0.5" role="tablist">
           {COUNTS.map((n) => (
@@ -92,7 +52,7 @@ export function MedicineEditor({ med, onClose, onSaved }: { med: EditableMedicin
                 <div className="flex items-center gap-3">
                   <PIcon size={22} weight="light" className="text-primary shrink-0" />
                   <input type="time" value={s.time} onChange={(e) => e.target.value && patch(i, { time: e.target.value })}
-                    aria-label={`Dose ${i + 1} time`} className="bg-transparent font-display font-bold text-[16px] outline-none w-[110px]" />
+                    aria-label={`Dose ${i + 1} time`} className="bg-transparent font-display font-bold text-[16px] outline-none w-[132px]" />
                   <span className="text-[12.5px] text-muted-foreground">{periodOf(s.time)}</span>
                 </div>
                 <div className="flex gap-1.5 mt-2.5" role="radiogroup" aria-label="Food rule">
@@ -117,6 +77,55 @@ export function MedicineEditor({ med, onClose, onSaved }: { med: EditableMedicin
             </button>
           ))}
         </div>
+
+    </>
+  );
+}
+
+/** Bottom sheet to set how often, when, and on which days a medicine is taken. */
+export function MedicineEditor({ med, onClose, onSaved }: { med: EditableMedicine | null; onClose: () => void; onSaved: () => void }) {
+  const [slots, setSlots] = useState<MedicineSlot[]>(defaultSlots(1));
+  const [days, setDays] = useState<number[]>(ALL_DAYS);
+  const [refill, setRefill] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!med) return;
+    setSlots(med.slots?.length ? med.slots : defaultSlots(1));
+    setDays(med.days?.length ? med.days : ALL_DAYS);
+    setRefill((med.refillAtDays ?? 7) > 0);
+  }, [med]);
+
+
+  const save = async () => {
+    if (!med) return;
+    if (days.length === 0) { toast.error("Pick at least one day"); return; }
+    if (new Set(slots.map((s) => s.time)).size !== slots.length) { toast.error("Two doses can't share a time"); return; }
+    setBusy(true);
+    try {
+      await updateMedicineSchedule(med.id, { slots, days, refillAtDays: refill ? 7 : 0 });
+      toast.success(`${med.name} schedule saved`);
+      onSaved();
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Drawer open={!!med} onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent className="max-w-[430px] mx-auto rounded-t-[34px] bg-background px-6 pb-7 pt-4 max-h-[92dvh] overflow-y-auto">
+        <div className="flex items-start justify-between">
+          <div>
+            <DrawerTitle className="text-[22px] font-bold">{med?.name}</DrawerTitle>
+            <DrawerDescription className="text-[13px] text-muted-foreground">{[med?.salt, med?.dose].filter(Boolean).join(" · ") || "Set when it's taken"}</DrawerDescription>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="glass w-10 h-10 rounded-full grid place-items-center"><X size={19} weight="light" /></button>
+        </div>
+
+        <ScheduleFields slots={slots} days={days} onSlots={setSlots} onDays={setDays} />
 
         <button onClick={() => setRefill(!refill)} role="switch" aria-checked={refill} className="w-full flex items-center justify-between mt-5 text-left">
           <span>

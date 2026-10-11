@@ -50,7 +50,7 @@ const CARE =
   "for anything worrying, say to call the doctor.";
 
 /* 1. Medicine label */
-export type ScannedLabel = { name: string; dosage: string; frequency: string; instructions: string };
+export type ScannedLabel = { name: string; salt: string; dosage: string; frequency: string; instructions: string; uses: string };
 export const scanMedicineLabel = createServerFn({ method: "POST" })
   .inputValidator((d: { image: string; idToken: string }) => d)
   .handler(async ({ data }): Promise<ScannedLabel> => {
@@ -58,14 +58,23 @@ export const scanMedicineLabel = createServerFn({ method: "POST" })
     const p = parseJson(
       await gemini(
         [
-          { text: 'Read this medicine label. JSON only: {"name","dosage","frequency","instructions"}, "" if not printed. Not a medicine: {"error":"x"}.' },
+          { text: 'Read this medicine label. JSON only: {"name" (brand),"salt" (active ingredients / composition, from the label or well-known for this brand),"dosage" (strength),"frequency","instructions","uses" (what it is for, 6 words max)}, "" if unknown. Not a medicine: {"error":"x"}.' },
           { inline_data: { mime_type: "image/jpeg", data: data.image } },
         ],
         { json: true },
       ),
     );
     if (p.error || !p.name) throw new Error("Couldn't read a medicine name. Retake the photo in better light.");
-    return { name: String(p.name), dosage: String(p.dosage ?? ""), frequency: String(p.frequency ?? ""), instructions: String(p.instructions ?? "") };
+    return { name: String(p.name), salt: String(p.salt ?? ""), dosage: String(p.dosage ?? ""), frequency: String(p.frequency ?? ""), instructions: String(p.instructions ?? ""), uses: String(p.uses ?? "") };
+  });
+
+/* 1b. Known medicine by name (typed, or after a scan edit) */
+export const lookupMedicine = createServerFn({ method: "POST" })
+  .inputValidator((d: { idToken: string; name: string }) => d)
+  .handler(async ({ data }): Promise<{ salt: string; uses: string; howToTake: string }> => {
+    await requireUser(data.idToken);
+    const p = parseJson(await gemini([{ text: `Medicine sold in India: "${data.name}". JSON only: {"salt":"active ingredients with strength if standard","uses":"what it is for, 6 words max","howToTake":"usual way, 8 words max"}. Use "" if you are not sure it exists.` }], { system: CARE, json: true }));
+    return { salt: String(p.salt ?? ""), uses: String(p.uses ?? ""), howToTake: String(p.howToTake ?? "") };
   });
 
 /* 2. Weekly / daily recap */

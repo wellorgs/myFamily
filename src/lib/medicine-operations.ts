@@ -15,6 +15,9 @@ export interface ScannedMedicineInput {
   frequency?: string | null;
   instructions?: string | null;
   familyId?: string | null;
+  salt?: string | null;
+  uses?: string | null;
+  schedule?: MedicineSchedule;
   /** Whose medicine this is. Defaults to the signed-in user (a parent scanning their own). */
   parentId?: string | null;
   parentName?: string | null;
@@ -40,7 +43,10 @@ export async function saveScannedMedicine(input: ScannedMedicineInput): Promise<
     familyId: input.familyId || null,
     name: input.name,
     dose: input.dosage ?? "",
-    freq: input.frequency ?? "As directed",
+    freq: input.schedule ? describeSlots(input.schedule.slots) : (input.frequency ?? "As directed"),
+    salt: input.salt ?? "",
+    uses: input.uses ?? "",
+    ...(input.schedule && { slots: input.schedule.slots, days: input.schedule.days, refillAtDays: input.schedule.refillAtDays, remind: true }),
     food: input.instructions ?? "",
     stock: 30,
     verified: !!input.autoApprove,
