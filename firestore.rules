@@ -46,6 +46,14 @@ service cloud.firestore {
       }
     }
 
+    match /reach_sessions/{sessionId}/messages/{msgId} {
+      allow read: if sameFamily(get(/databases/$(database)/documents/reach_sessions/$(sessionId)).data.familyId);
+    }
+
+    match /feature_requests/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
     match /{collection}/{docId} {
       allow read, write: if signedIn() &&
         collection in [
@@ -57,6 +65,8 @@ service cloud.firestore {
           "appointments",
           "vitals",
           "sos_events",
+          "reach_sessions",
+          "devices",
           "media_posts",
           "notifications",
           "ai_conversations",
